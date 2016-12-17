@@ -8,7 +8,7 @@ jobs:
     - get: broker-config
       trigger: true
   - task: build
-    file: broker-config/ci/tasks/build.yml
+    file: broker-config/tasks/build.yml
     params:
       AUTH_USERNAME: {{staging-auth-name}}
       AUTH_PASSWORD: {{staging-auth-pass}}
@@ -74,7 +74,7 @@ jobs:
       # passed: [acceptance-tests-staging]
       trigger: true
   - task: build
-    file: broker-config/ci/tasks/build.yml
+    file: broker-config/tasks/build.yml
     params:
       AUTH_USERNAME: {{production-auth-name}}
       AUTH_PASSWORD: {{production-auth-pass}}
