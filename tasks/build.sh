@@ -10,6 +10,8 @@ cat << EOF > credentials.json
   "s3_config": {
     "region": "${AWS_REGION}",
     "aws_partition": "${AWS_PARTITION}",
+    "user_prefix": "${USER_PREFIX}",
+    "policy_prefix": "${POLICY_PREFIX}",
     "bucket_prefix": "${BUCKET_PREFIX}",
     "iam_path": "${IAM_PATH}"
   }
