@@ -1,10 +1,20 @@
 ---
 jobs:
+- name: test-s3-broker
+  plan:
+  - aggregate:
+    - get: broker-src
+      trigger: true
+    - get: broker-config
+  - task: test
+    file: broker-config/tasks/test.yml
+
 - name: push-s3-broker-staging
   serial: true
   plan:
   - aggregate:
     - get: broker-src
+      passed: [test-s3-broker]
       trigger: true
     - get: broker-config
       trigger: true
