@@ -46,7 +46,7 @@ jobs:
       BROKER_NAME: s3-broker
       AUTH_USER: {{staging-auth-name}}
       AUTH_PASS: {{staging-auth-pass}}
-      SERVICES: aws-s3
+      SERVICES: s3
   on_failure:
     put: slack
     params:
@@ -76,14 +76,25 @@ jobs:
     - get: broker-config
       passed: [push-s3-broker-staging]
       trigger: true
-  - task: acceptance-tests
-    file: broker-config/tasks/acceptance-tests.yml
-    params:
-      <<: *staging-cf-creds
-      APP_NAME: s3-acceptance-test
-      SERVICE_NAME: aws-s3
-      PLAN_NAME: default
-      SERVICE_INSTANCE_NAME: s3-acceptance-test
+  - aggregate:
+    - task: acceptance-tests
+      file: broker-config/tasks/acceptance-tests.yml
+      params:
+        <<: *staging-cf-creds
+        APP_NAME: s3-acceptance-test
+        SERVICE_NAME: s3
+        PLAN_NAME: basic
+        SERVICE_INSTANCE_NAME: s3-acceptance-test
+        IS_PUBLIC: "false"
+    - task: acceptance-tests-public
+      file: broker-config/tasks/acceptance-tests.yml
+      params:
+        <<: *staging-cf-creds
+        APP_NAME: s3-acceptance-test-public
+        SERVICE_NAME: s3
+        PLAN_NAME: basic-public
+        SERVICE_INSTANCE_NAME: s3-acceptance-test-public
+        IS_PUBLIC: "true"
 
 - name: push-s3-broker-production
   serial: true
@@ -123,7 +134,7 @@ jobs:
       BROKER_NAME: s3-broker
       AUTH_USER: {{production-auth-name}}
       AUTH_PASS: {{production-auth-pass}}
-      SERVICES: aws-s3
+      SERVICES: s3
   on_failure:
     put: slack
     params:
@@ -153,14 +164,25 @@ jobs:
     - get: broker-config
       passed: [push-s3-broker-production]
       trigger: true
-  - task: smoke-tests-s3
-    file: broker-config/tasks/acceptance-tests.yml
-    params:
-      <<: *production-cf-creds
-      APP_NAME: s3-acceptance-test
-      SERVICE_NAME: aws-s3
-      PLAN_NAME: default
-      SERVICE_INSTANCE_NAME: s3-acceptance-test
+  - aggregate:
+    - task: smoke-tests-s3
+      file: broker-config/tasks/acceptance-tests.yml
+      params:
+        <<: *production-cf-creds
+        APP_NAME: s3-acceptance-test
+        SERVICE_NAME: s3
+        PLAN_NAME: basic
+        SERVICE_INSTANCE_NAME: s3-acceptance-test
+        IS_PUBLIC: "false"
+    - task: smoke-tests-s3
+      file: broker-config/tasks/acceptance-tests.yml
+      params:
+        <<: *production-cf-creds
+        APP_NAME: s3-acceptance-test-public
+        SERVICE_NAME: s3
+        PLAN_NAME: basic-public
+        SERVICE_INSTANCE_NAME: s3-acceptance-test-public
+        IS_PUBLIC: "true"
 
 resource_types:
 - name: slack-notification
