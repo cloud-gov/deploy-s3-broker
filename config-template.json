@@ -13,7 +13,7 @@
       "services": [
         {
           "id": "98FF26D0-2E01-11E5-9184-FEFF819CDC9F",
-          "name": "aws-s3",
+          "name": "s3",
           "description": "Amazon Simple Storage Service (S3)",
           "bindable": true,
           "tags": [
