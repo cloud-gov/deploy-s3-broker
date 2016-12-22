@@ -82,7 +82,7 @@ jobs:
       <<: *staging-cf-creds
       APP_NAME: s3-acceptance-test
       SERVICE_NAME: aws-s3
-      PLAN_NAME: default
+      PLAN_NAME: basic
       SERVICE_INSTANCE_NAME: s3-acceptance-test
 
 - name: push-s3-broker-production
@@ -159,7 +159,7 @@ jobs:
       <<: *production-cf-creds
       APP_NAME: s3-acceptance-test
       SERVICE_NAME: aws-s3
-      PLAN_NAME: default
+      PLAN_NAME: basic
       SERVICE_INSTANCE_NAME: s3-acceptance-test
 
 resource_types:
