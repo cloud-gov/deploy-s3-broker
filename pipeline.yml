@@ -28,7 +28,7 @@ jobs:
       USER_PREFIX: {{staging-user-prefix}}
       POLICY_PREFIX: {{staging-policy-prefix}}
       BUCKET_PREFIX: {{staging-bucket-prefix}}
-      IAM_PATH: "/cloud-foundry/s3/"
+      IAM_PATH: {{staging-iam-path}}
       AWS_PARTITION: aws-us-gov
   - put: deploy-s3-broker-app-staging
     params:
@@ -116,7 +116,7 @@ jobs:
       USER_PREFIX: {{production-user-prefix}}
       POLICY_PREFIX: {{production-policy-prefix}}
       BUCKET_PREFIX: {{production-bucket-prefix}}
-      IAM_PATH: "/cloud-foundry/s3/"
+      IAM_PATH: {{production-iam-path}}
       AWS_PARTITION: aws-us-gov
   - put: deploy-s3-broker-app-production
     params:
