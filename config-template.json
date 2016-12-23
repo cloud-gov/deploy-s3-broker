@@ -105,7 +105,7 @@
             {
               "id": "16A19515-C2B9-4982-80BD-69BED6A86C85",
               "name": "basic-public",
-              "description": "Provides a single publicly accessible S3 bucket with unlimited storage.",
+              "description": "Provides a single publicly accessible S3 bucket with unlimited storage.  All data in this bucket is public.",
               "metadata": {
                 "costs": [
                   {
