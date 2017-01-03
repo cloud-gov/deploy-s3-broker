@@ -14,7 +14,7 @@
         {
           "id": "98FF26D0-2E01-11E5-9184-FEFF819CDC9F",
           "name": "s3",
-          "description": "Amazon Simple Storage Service (Amazon S3), provides developers and IT teams with secure, durable, highly-scalable object storage.",
+          "description": "Amazon S3 provides developers with secure, durable, highly-scalable object storage",
           "bindable": true,
           "tags": [
             "AWS",
@@ -33,7 +33,7 @@
             {
               "id": "EAAD05D8-2E01-11E5-9184-FEFF819CDC9F",
               "name": "basic",
-              "description": "A single private bucket with unlimited storage.",
+              "description": "A single private bucket with unlimited storage",
               "metadata": {
                 "costs": [
                   {
@@ -104,7 +104,7 @@
             {
               "id": "16A19515-C2B9-4982-80BD-69BED6A86C85",
               "name": "basic-public",
-              "description": "A single bucket with unlimited storage where the files are all public to read.",
+              "description": "A single bucket with unlimited storage where the files are all public to read",
               "metadata": {
                 "costs": [
                   {
