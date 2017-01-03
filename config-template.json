@@ -14,7 +14,7 @@
         {
           "id": "98FF26D0-2E01-11E5-9184-FEFF819CDC9F",
           "name": "s3",
-          "description": "Amazon S3 provides developers with secure, durable, highly-scalable object storage",
+          "description": "Amazon s3 provides developers with secure, durable, highly-scalable object storage",
           "bindable": true,
           "tags": [
             "AWS",
