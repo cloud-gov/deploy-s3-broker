@@ -182,6 +182,96 @@
                   ]
                 }
               }
+            },
+            {
+              "id": "A6544164-D0AA-482B-97CA-0A5E3C90CC1A",
+              "name": "basic-encrypted",
+              "description": "Provides a single S3 bucket with unlimited storage. All uploads to this bucket must be encrypted.",
+              "metadata": {
+                "costs": [
+                  {
+                    "amount": {
+                      "usd": 0.0300
+                    },
+                    "unit": "Per GB"
+                  }
+                ],
+                "bullets": [
+                  "Single S3 bucket",
+                  "Unlimited storage, unlimited number of objects."
+                ]
+              },
+              "free": false,
+              "s3_properties": {
+                "iam_policy": {
+                  "Version": "2012-10-17",
+                  "Statement": [
+                    {
+                      "Action": [
+                        "s3:DeleteBucketWebsite",
+                        "s3:GetBucketAcl",
+                        "s3:GetBucketCORS",
+                        "s3:GetBucketLocation",
+                        "s3:GetBucketLogging",
+                        "s3:GetBucketNotification",
+                        "s3:GetBucketPolicy",
+                        "s3:GetBucketTagging",
+                        "s3:GetBucketVersioning",
+                        "s3:GetBucketWebsite",
+                        "s3:ListBucket",
+                        "s3:ListBucketMultipartUploads",
+                        "s3:ListBucketVersions",
+                        "s3:PutBucketCORS",
+                        "s3:PutBucketLogging",
+                        "s3:PutBucketNotification",
+                        "s3:PutBucketVersioning",
+                        "s3:PutBucketWebsite"
+                      ],
+                      "Effect": "Allow",
+                      "Resource": "{{.Resource}}"
+                    },
+                    {
+                      "Action": [
+                        "s3:AbortMultipartUpload",
+                        "s3:DeleteObject",
+                        "s3:DeleteObjectVersion",
+                        "s3:GetObject",
+                        "s3:GetObjectAcl",
+                        "s3:GetObjectTorrent",
+                        "s3:GetObjectVersion",
+                        "s3:GetObjectVersionAcl",
+                        "s3:GetObjectVersionTorrent",
+                        "s3:ListMultipartUploadParts",
+                        "s3:PutObject",
+                        "s3:PutObjectAcl",
+                        "s3:PutObjectVersionAcl",
+                        "s3:RestoreObject"
+                      ],
+                      "Effect": "Allow",
+                      "Resource": "{{.Resource}}/*"
+                    }
+                  ]
+                },
+                "bucket_policy": {
+                  "Version": "2012-10-17",
+                  "Statement": [
+                    {
+                      "Sid": "DenyUnencryptedPut",
+                      "Effect": "Deny",
+                      "Principal": {
+                        "AWS": "*"
+                      },
+                      "Action": "s3:PutObject",
+                      "Resource": ["arn:{{.AwsPartition}}:s3:::{{.BucketName}}/*"],
+                      "Condition": {
+                        "StringNotEquals": {
+                          "s3:x-amz-server-side-encryption": "AES256"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
             }
           ]
         }
