@@ -87,6 +87,16 @@ jobs:
         PLAN_NAME: basic
         SERVICE_INSTANCE_NAME: s3-acceptance-test
         IS_PUBLIC: "false"
+    - task: acceptance-tests-additional
+      file: broker-config/tasks/acceptance-tests.yml
+      params:
+        <<: *staging-cf-creds
+        APP_NAME: s3-acceptance-test-additional
+        SERVICE_NAME: s3
+        PLAN_NAME: basic
+        SERVICE_INSTANCE_NAME: s3-acceptance-test-main
+        ADDITIONAL_INSTANCE_NAME: s3-acceptance-test-additional
+        IS_PUBLIC: "false"
     - task: acceptance-tests-public
       file: broker-config/tasks/acceptance-tests.yml
       params:
@@ -167,7 +177,7 @@ jobs:
       passed: [push-s3-broker-production]
       trigger: true
   - aggregate:
-    - task: smoke-tests-s3
+    - task: acceptance-tests
       file: broker-config/tasks/acceptance-tests.yml
       params:
         <<: *production-cf-creds
@@ -176,7 +186,17 @@ jobs:
         PLAN_NAME: basic
         SERVICE_INSTANCE_NAME: s3-acceptance-test
         IS_PUBLIC: "false"
-    - task: smoke-tests-s3
+    - task: acceptance-tests-additional
+      file: broker-config/tasks/acceptance-tests.yml
+      params:
+        <<: *production-cf-creds
+        APP_NAME: s3-acceptance-test-additional
+        SERVICE_NAME: s3
+        PLAN_NAME: basic
+        SERVICE_INSTANCE_NAME: s3-acceptance-test-main
+        ADDITIONAL_INSTANCE_NAME: s3-acceptance-test-additional
+        IS_PUBLIC: "false"
+    - task: acceptance-tests-public
       file: broker-config/tasks/acceptance-tests.yml
       params:
         <<: *production-cf-creds
