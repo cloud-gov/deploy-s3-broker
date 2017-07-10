@@ -15,8 +15,8 @@ s3_config:
   iam_path: "${IAM_PATH}"
 cf_config:
   api_url: "${CF_API_URL}"
-  user: "${CF_USERNAME}"
-  password: "${CF_PASSWORD}"
+  client_id: "${CF_CLIENT_ID}"
+  client_secret: "${CF_CLIENT_SECRET}"
 EOF
 
 cp -r broker-src/. broker-src-built
