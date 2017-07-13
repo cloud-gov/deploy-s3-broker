@@ -30,8 +30,8 @@ jobs:
       BUCKET_PREFIX: {{staging-bucket-prefix}}
       IAM_PATH: {{staging-iam-path}}
       CF_API_URL: {{staging-cf-api-url}}
-      CF_USERNAME: {{staging-cf-username}}
-      CF_PASSWORD: {{staging-cf-password}}
+      CF_CLIENT_ID: {{staging-cf-client-id}}
+      CF_CLIENT_SECRET: {{staging-cf-client-secret}}
       AWS_PARTITION: aws-us-gov
   - put: deploy-s3-broker-app-staging
     params:
@@ -129,8 +129,8 @@ jobs:
       BUCKET_PREFIX: {{production-bucket-prefix}}
       IAM_PATH: {{production-iam-path}}
       CF_API_URL: {{production-cf-api-url}}
-      CF_USERNAME: {{production-cf-username}}
-      CF_PASSWORD: {{production-cf-password}}
+      CF_CLIENT_ID: {{production-cf-client-id}}
+      CF_CLIENT_SECRET: {{production-cf-client-secret}}
       AWS_PARTITION: aws-us-gov
   - put: deploy-s3-broker-app-production
     params:
