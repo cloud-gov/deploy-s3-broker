@@ -30,7 +30,8 @@ applications:
   buildpack: go_buildpack
   command: s3-broker --config ./config.yml --port \$PORT
 env:
-  GOVERSION: go1.8
+  GOVERSION: go1.10
+  GOPACKAGENAME: github.com/cloudfoundry-community/s3-broker
 EOF
 
 spruce merge broker-config/config-template.yml credentials.yml \
