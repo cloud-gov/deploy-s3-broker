@@ -89,6 +89,18 @@ s3_config:
                 }
               ]
             }
+          encryption: &encryption |-
+            {
+              "ServerSideEncryptionConfiguration": {
+                "Rules": [
+                  {
+                    "ApplyServerSideEncryptionByDefault": {
+                      "SSEAlgorithm": "AES256"
+                    }
+                  }
+                ]
+              }
+            }
       - id: 16A19515-C2B9-4982-80BD-69BED6A86C85
         name: basic-public
         description: A single public bucket with unlimited storage, where the files are all public to read
@@ -115,3 +127,4 @@ s3_config:
                 }
               ]
             }
+          encryption: *encryption
