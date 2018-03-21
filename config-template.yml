@@ -29,7 +29,7 @@ s3_config:
       - id: EAAD05D8-2E01-11E5-9184-FEFF819CDC9F
         name: basic
         description: A single private bucket with unlimited storage
-        free: false
+        free: true
         metadata:
           bullets:
           - Single S3 bucket
@@ -39,6 +39,36 @@ s3_config:
               usd: 0.03
             unit: Per GB
         s3_properties:
+          bucket_policy: |-
+            {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Sid": "DenyIncorrectEncryptionHeader",
+                  "Effect": "Deny",
+                  "Principal": "*",
+                  "Action": "s3:PutObject",
+                  "Resource": ["arn:{{.AwsPartition}}:s3:::{{.BucketName}}/*"]
+                  "Condition": {
+                    "StringNotEquals": {
+                      "s3:x-amz-server-side-encryption": "AES256"
+                    }
+                  }
+                },
+                {
+                  "Sid": "DenyUnEncryptedObjectUploads",
+                  "Effect": "Deny",
+                  "Principal": "*",
+                  "Action": "s3:PutObject",
+                  "Resource": ["arn:{{.AwsPartition}}:s3:::{{.BucketName}}/*"]
+                  "Condition": {
+                    "Null": {
+                      "s3:x-amz-server-side-encryption": "true"
+                    }
+                  }
+                }
+              ]
+            }
           iam_policy: &iam-policy |-
             {
               "Version": "2012-10-17",
@@ -92,7 +122,7 @@ s3_config:
       - id: 16A19515-C2B9-4982-80BD-69BED6A86C85
         name: basic-public
         description: A single public bucket with unlimited storage, where the files are all public to read
-        free: false
+        free: true
         metadata:
           bullets:
           - Single S3 bucket
@@ -107,6 +137,30 @@ s3_config:
             {
               "Version": "2012-10-17",
               "Statement": [
+                {
+                  "Sid": "DenyIncorrectEncryptionHeader",
+                  "Effect": "Deny",
+                  "Principal": "*",
+                  "Action": "s3:PutObject",
+                  "Resource": ["arn:{{.AwsPartition}}:s3:::{{.BucketName}}/*"]
+                  "Condition": {
+                    "StringNotEquals": {
+                      "s3:x-amz-server-side-encryption": "AES256"
+                    }
+                  }
+                },
+                {
+                  "Sid": "DenyUnEncryptedObjectUploads",
+                  "Effect": "Deny",
+                  "Principal": "*",
+                  "Action": "s3:PutObject",
+                  "Resource": ["arn:{{.AwsPartition}}:s3:::{{.BucketName}}/*"]
+                  "Condition": {
+                    "Null": {
+                      "s3:x-amz-server-side-encryption": "true"
+                    }
+                  }
+                },
                 {
                   "Effect": "Allow",
                   "Principal": "*",
