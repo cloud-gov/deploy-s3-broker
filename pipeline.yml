@@ -6,6 +6,7 @@ jobs:
     - get: broker-src
       trigger: true
     - get: broker-config
+      trigger: true
   - task: test
     file: broker-config/tasks/test.yml
 
@@ -17,6 +18,7 @@ jobs:
       passed: [test-s3-broker]
       trigger: true
     - get: broker-config
+      passed: [test-s3-broker]
       trigger: true
     - get: pipeline-tasks
   - task: build
@@ -87,6 +89,16 @@ jobs:
         PLAN_NAME: basic
         SERVICE_INSTANCE_NAME: s3-acceptance-test
         IS_PUBLIC: "false"
+        ENCRYPTION: &encryption |-
+          {
+            "Rules": [
+              {
+                "ApplyServerSideEncryptionByDefault": {
+                  "SSEAlgorithm": "AES256"
+                }
+              }
+            ]
+          }
     - task: acceptance-tests-additional
       file: broker-config/tasks/acceptance-tests.yml
       params:
@@ -97,6 +109,7 @@ jobs:
         SERVICE_INSTANCE_NAME: s3-acceptance-test-main
         ADDITIONAL_INSTANCE_NAME: s3-acceptance-test-additional
         IS_PUBLIC: "false"
+        ENCRYPTION: *encryption
     - task: acceptance-tests-public
       file: broker-config/tasks/acceptance-tests.yml
       params:
@@ -106,6 +119,7 @@ jobs:
         PLAN_NAME: basic-public
         SERVICE_INSTANCE_NAME: s3-acceptance-test-public
         IS_PUBLIC: "true"
+        ENCRYPTION: *encryption
 
 - name: push-s3-broker-production
   serial: true
@@ -186,6 +200,7 @@ jobs:
         PLAN_NAME: basic
         SERVICE_INSTANCE_NAME: s3-acceptance-test
         IS_PUBLIC: "false"
+        ENCRYPTION: *encryption
     - task: acceptance-tests-additional
       file: broker-config/tasks/acceptance-tests.yml
       params:
@@ -196,6 +211,7 @@ jobs:
         SERVICE_INSTANCE_NAME: s3-acceptance-test-main
         ADDITIONAL_INSTANCE_NAME: s3-acceptance-test-additional
         IS_PUBLIC: "false"
+        ENCRYPTION: *encryption
     - task: acceptance-tests-public
       file: broker-config/tasks/acceptance-tests.yml
       params:
@@ -205,6 +221,7 @@ jobs:
         PLAN_NAME: basic-public
         SERVICE_INSTANCE_NAME: s3-acceptance-test-public
         IS_PUBLIC: "true"
+        ENCRYPTION: *encryption
 
 resource_types:
 - name: slack-notification

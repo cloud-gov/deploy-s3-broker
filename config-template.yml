@@ -55,6 +55,7 @@ s3_config:
                     "s3:GetBucketTagging",
                     "s3:GetBucketVersioning",
                     "s3:GetBucketWebsite",
+                    "s3:GetEncryptionConfiguration",
                     "s3:ListBucket",
                     "s3:ListBucketMultipartUploads",
                     "s3:ListBucketVersions",
@@ -91,15 +92,13 @@ s3_config:
             }
           encryption: &encryption |-
             {
-              "ServerSideEncryptionConfiguration": {
-                "Rules": [
-                  {
-                    "ApplyServerSideEncryptionByDefault": {
-                      "SSEAlgorithm": "AES256"
-                    }
+              "Rules": [
+                {
+                  "ApplyServerSideEncryptionByDefault": {
+                    "SSEAlgorithm": "AES256"
                   }
-                ]
-              }
+                }
+              ]
             }
       - id: 16A19515-C2B9-4982-80BD-69BED6A86C85
         name: basic-public
