@@ -108,6 +108,8 @@ jobs:
         PLAN_NAME: basic
         SERVICE_INSTANCE_NAME: s3-acceptance-test-main
         ADDITIONAL_INSTANCE_NAME: s3-acceptance-test-additional
+        ADDITIONAL_INSTANCE_DECOY_NAME: s3-acceptance-test-additional-decoy
+        CF_SPACE_ADDITIONAL_DECOY: {{staging-cf-space-additional-decoy}}
         IS_PUBLIC: "false"
         ENCRYPTION: *encryption
     - task: acceptance-tests-public
@@ -210,6 +212,8 @@ jobs:
         PLAN_NAME: basic
         SERVICE_INSTANCE_NAME: s3-acceptance-test-main
         ADDITIONAL_INSTANCE_NAME: s3-acceptance-test-additional
+        ADDITIONAL_INSTANCE_DECOY_NAME: s3-acceptance-test-additional-decoy
+        CF_SPACE_ADDITIONAL_DECOY: {{production-cf-space-additional-decoy}}
         IS_PUBLIC: "false"
         ENCRYPTION: *encryption
     - task: acceptance-tests-public
