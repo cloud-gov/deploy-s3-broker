@@ -79,6 +79,11 @@ jobs:
     - get: broker-config
       passed: [push-s3-broker-staging]
       trigger: true
+    # Run tests on changes to upstream dependencies
+    - get: terraform-yaml-staging
+      trigger: true
+    - get: cf-staging-version
+      trigger: true
   - aggregate:
     - task: acceptance-tests
       file: broker-config/tasks/acceptance-tests.yml
@@ -192,6 +197,11 @@ jobs:
     - get: broker-config
       passed: [push-s3-broker-production]
       trigger: true
+    # Run tests on changes to upstream dependencies
+    - get: terraform-yaml-production
+      trigger: true
+    - get: cf-production-version
+      trigger: true
   - aggregate:
     - task: acceptance-tests
       file: broker-config/tasks/acceptance-tests.yml
@@ -228,6 +238,16 @@ jobs:
         ENCRYPTION: *encryption
 
 resource_types:
+- name: s3-iam
+  type: docker-image
+  source:
+    repository: 18fgsa/s3-resource
+
+- name: semver-iam
+  type: docker-image
+  source:
+    repository: governmentpaas/semver-resource
+
 - name: slack-notification
   type: docker-image
   source:
@@ -252,6 +272,36 @@ resources:
     uri: {{pipeline-tasks-git-url}}
     branch: {{pipeline-tasks-git-branch}}
 
+- name: terraform-yaml-staging
+  type: s3-iam
+  source:
+    bucket: {{tf-state-bucket}}
+    versioned_file: {{tf-state-file-staging}}
+    region_name: {{aws-region}}
+
+- name: terraform-yaml-production
+  type: s3-iam
+  source:
+    bucket: {{tf-state-bucket}}
+    versioned_file: {{tf-state-file-production}}
+    region_name: {{aws-region}}
+
+- name: cf-staging-version
+  type: semver-iam
+  source:
+    driver: s3
+    bucket: ((semver-bucket))
+    key: ((cf-staging-version-key))
+    region_name: ((aws-region))
+
+- name: cf-production-version
+  type: semver-iam
+  source:
+    driver: s3
+    bucket: ((semver-bucket))
+    key: ((cf-production-version-key))
+    region_name: ((aws-region))
+
 - name: deploy-s3-broker-app-staging
   type: cf
   source:
@@ -260,7 +310,6 @@ resources:
     password: {{staging-cf-password}}
     organization: {{staging-cf-organization}}
     space: {{staging-cf-space}}
-    skip_cert_check: false
 
 - name: deploy-s3-broker-app-production
   type: cf
@@ -270,7 +319,6 @@ resources:
     password: {{production-cf-password}}
     organization: {{production-cf-organization}}
     space: {{production-cf-space}}
-    skip_cert_check: false
 
 - name: slack
   type: slack-notification
