@@ -127,6 +127,15 @@ jobs:
         SERVICE_INSTANCE_NAME: s3-acceptance-test-public
         IS_PUBLIC: "true"
         ENCRYPTION: *encryption
+  on_failure:
+    put: slack
+    params:
+      text: |
+        :x: Acceptance tests s3-broker failed on staging
+        <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
+      channel: {{slack-channel}}
+      username: {{slack-username}}
+      icon_url: {{slack-icon-url}}
 
 - name: push-s3-broker-production
   serial: true
@@ -236,6 +245,15 @@ jobs:
         SERVICE_INSTANCE_NAME: s3-acceptance-test-public
         IS_PUBLIC: "true"
         ENCRYPTION: *encryption
+  on_failure:
+    put: slack
+    params:
+      text: |
+        :x: Acceptance tests s3-broker failed on production
+        <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
+      channel: {{slack-channel}}
+      username: {{slack-username}}
+      icon_url: {{slack-icon-url}}
 
 resource_types:
 - name: s3-iam
