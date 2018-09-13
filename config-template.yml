@@ -30,6 +30,7 @@ s3_config:
         name: basic
         description: A single private bucket with unlimited storage
         free: true
+        durable: true
         metadata:
           bullets:
           - Single S3 bucket
@@ -104,6 +105,7 @@ s3_config:
         name: basic-public
         description: A single public bucket with unlimited storage, where the files are all public to read
         free: true
+        durable: true
         metadata:
           bullets:
           - Single S3 bucket
