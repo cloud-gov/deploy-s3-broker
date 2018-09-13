@@ -127,3 +127,33 @@ s3_config:
               ]
             }
           encryption: *encryption
+      - id: 81194F9D-B29E-485F-866A-CA3861D511AB
+        name: basic-public-sandbox
+        description: A single public bucket with unlimited storage, where the files are all public to read.  Plan is exclusive to sandbox accounts, S3 storage is cleared when service is deleted.
+        free: true
+        durable: true
+        metadata:
+          bullets:
+          - Single S3 bucket
+          - Unlimited storage, unlimited number of objects
+          - Files are deleted from S3 when service is deleted.
+          costs:
+          - amount:
+              usd: 0.03
+            unit: Per GB
+        s3_properties:
+          iam_policy: *iam-policy
+          bucket_policy: |-
+            {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Principal": "*",
+                  "Action": ["s3:GetObject"],
+                  "Resource": ["arn:{{.AwsPartition}}:s3:::{{.BucketName}}/*"]
+                }
+              ]
+            }
+          encryption: *encryption
+
