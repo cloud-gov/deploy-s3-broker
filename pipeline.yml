@@ -122,6 +122,18 @@ jobs:
         SERVICE_INSTANCE_NAME: s3-acceptance-test-public
         IS_PUBLIC: "true"
         ENCRYPTION: *encryption
+    - task: acceptance-tests-public-delete
+      file: broker-config/tasks/acceptance-tests.yml
+      params:
+        <<: *staging-cf-creds
+        APP_NAME: s3-acceptance-test-public
+        SERVICE_NAME: s3
+        PLAN_NAME: basic-public-sandbox
+        SERVICE_INSTANCE_NAME: s3-acceptance-test-public
+        IS_PUBLIC: "true"
+        IS_DELETE: "true"
+        ENCRYPTION: *encryption
+      
 
 - name: push-s3-broker-production
   serial: true
