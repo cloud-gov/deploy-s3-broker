@@ -126,10 +126,10 @@ jobs:
       file: broker-config/tasks/acceptance-tests.yml
       params:
         <<: *staging-cf-creds
-        APP_NAME: s3-acceptance-test-public
+        APP_NAME: s3-acceptance-test-public-delete
         SERVICE_NAME: s3
         PLAN_NAME: basic-public-sandbox
-        SERVICE_INSTANCE_NAME: s3-acceptance-test-public
+        SERVICE_INSTANCE_NAME: s3-acceptance-test-public-delete
         IS_PUBLIC: "true"
         IS_DELETE: "true"
         ENCRYPTION: *encryption
