@@ -30,7 +30,7 @@ s3_config:
         name: basic
         description: A single private bucket with unlimited storage
         free: true
-        durable: true
+        deletable: false
         metadata:
           bullets:
           - Single S3 bucket
@@ -105,7 +105,7 @@ s3_config:
         name: basic-public
         description: A single public bucket with unlimited storage, where the files are all public to read
         free: true
-        durable: true
+        deletable: false
         metadata:
           bullets:
           - Single S3 bucket
@@ -133,7 +133,7 @@ s3_config:
         name: basic-public-sandbox
         description: A single public bucket with unlimited storage, where the files are all public to read.  Plan is exclusive to sandbox accounts, S3 storage is cleared when service is deleted.
         free: true
-        durable: false
+        deletable: true
         metadata:
           bullets:
           - Single S3 bucket
@@ -162,7 +162,7 @@ s3_config:
         name: basic-sandbox
         description: A single private bucket with unlimited storage.  Plan is exclusive to sandbox accounts, S3 storage is cleared when service is deleted.
         free: true
-        durable: false
+        deletable: true
         metadata:
           bullets:
           - Single S3 bucket
