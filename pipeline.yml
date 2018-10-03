@@ -50,6 +50,16 @@ jobs:
       AUTH_USER: {{staging-auth-name}}
       AUTH_PASS: {{staging-auth-pass}}
       SERVICES: s3
+  - task: update-broker-sandbox
+    file: pipeline-tasks/register-service-broker.yml
+    params:
+      <<: *staging-cf-creds
+      BROKER_NAME: s3-broker
+      AUTH_USER: {{staging-auth-name}}
+      AUTH_PASS: {{staging-auth-pass}}
+      SERVICES: s3:basic-sandbox s3:basic-public-sandbox
+      SERVICE_ORGANIZATION: sandbox-gsa
+
   on_failure:
     put: slack
     params:
