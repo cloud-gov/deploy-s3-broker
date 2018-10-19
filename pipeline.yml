@@ -43,7 +43,15 @@ jobs:
       environment_variables:
         AWS_REGION: {{staging-aws-region}}
   - task: update-broker
-    file: pipeline-tasks/register-service-broker-for-sandboxes.yml
+    file: pipeline-tasks/register-service-broker.yml
+    params:
+      <<: *staging-cf-creds
+      BROKER_NAME: s3-broker
+      AUTH_USER: {{staging-auth-name}}
+      AUTH_PASS: {{staging-auth-pass}}
+      SERVICES: s3
+  - task: update-broker-sandbox
+    file: pipeline-tasks/register-service-broker-sandboxes.yml
     params:
       <<: *staging-cf-creds
       BROKER_NAME: s3-broker
@@ -79,6 +87,10 @@ jobs:
       trigger: true
     - get: broker-config
       passed: [push-s3-broker-staging]
+      trigger: true
+    - get: terraform-yaml-staging
+      trigger: true
+    - get: cf-staging-version
       trigger: true
   - aggregate:
     - task: acceptance-tests
@@ -176,8 +188,8 @@ jobs:
       AUTH_USER: {{production-auth-name}}
       AUTH_PASS: {{production-auth-pass}}
       SERVICES: s3
-  - task: update-broker
-    file: pipeline-tasks/register-service-broker-for-sandboxes.yml
+  - task: update-broker-sandbox
+    file: pipeline-tasks/register-service-broker-sandboxes.yml
     params:
       <<: *production-cf-creds
       BROKER_NAME: s3-broker
@@ -212,6 +224,10 @@ jobs:
       trigger: true
     - get: broker-config
       passed: [push-s3-broker-production]
+      trigger: true
+    - get: terraform-yaml-production
+      trigger: true
+    - get: cf-production-version
       trigger: true
   - aggregate:
     - task: acceptance-tests
@@ -254,6 +270,16 @@ resource_types:
   source:
     repository: cfcommunity/slack-notification-resource
 
+- name: s3-iam
+  type: docker-image
+  source:
+    repository: 18fgsa/s3-resource
+
+- name: semver-iam
+  type: docker-image
+  source:
+    repository: governmentpaas/semver-resource
+
 resources:
 - name: broker-src
   type: git
@@ -281,7 +307,36 @@ resources:
     password: {{staging-cf-password}}
     organization: {{staging-cf-organization}}
     space: {{staging-cf-space}}
-    skip_cert_check: false
+
+- name: cf-staging-version
+  type: semver-iam
+  source:
+    bucket: {{staging-semver-bucket}}
+    driver: {{staging-semver-driver}}
+    key: {{staging-semver-key}}
+    region_name: {{staging-semver-region}}
+
+- name: cf-production-version
+  type: semver-iam
+  source:
+    bucket: {{production-semver-bucket}}
+    driver: {{production-semver-driver}}
+    key: {{production-semver-key}}
+    region_name: {{production-semver-region}}
+
+- name: terraform-yaml-staging
+  type: s3-iam
+  source:
+    bucket: {{staging-terraform-bucket}}
+    region_name: {{staging-terraform-region}}
+    versioned_file: {{staging-terraform-file}}
+
+- name: terraform-yaml-production
+  type: s3-iam
+  source:
+    bucket: {{production-terraform-bucket}}
+    region_name: {{production-terraform-region}}
+    versioned_file: {{production-terraform-file}}
 
 - name: deploy-s3-broker-app-production
   type: cf
@@ -291,7 +346,14 @@ resources:
     password: {{production-cf-password}}
     organization: {{production-cf-organization}}
     space: {{production-cf-space}}
-    skip_cert_check: false
+
+- name: cf-production-version
+  type: semver-iam
+  source:
+    bucket: {{production-semver-bucket}}
+    driver: {{production-semver-driver}}
+    key: {{production-semver-key}}
+    region_name: {{production-semver-region}}
 
 - name: slack
   type: slack-notification
