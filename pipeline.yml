@@ -347,14 +347,6 @@ resources:
     organization: {{production-cf-organization}}
     space: {{production-cf-space}}
 
-- name: cf-production-version
-  type: semver-iam
-  source:
-    bucket: {{production-semver-bucket}}
-    driver: {{production-semver-driver}}
-    key: {{production-semver-key}}
-    region_name: {{production-semver-region}}
-
 - name: slack
   type: slack-notification
   source:
