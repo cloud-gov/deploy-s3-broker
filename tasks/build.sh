@@ -27,7 +27,9 @@ applications:
 - name: s3-broker
   memory: 256M
   disk_quota: 256M
-  buildpack: go_buildpack
+  buildpacks:
+  - go_buildpack
+  stack: cflinuxfs3
   command: s3-broker --config ./config.yml --port \$PORT
 env:
   GOVERSION: go1.10
