@@ -30,7 +30,7 @@ applications:
   buildpack: go_buildpack
   command: s3-broker --config ./config.yml --port \$PORT
 env:
-  GOVERSION: go1.10
+  GOVERSION: go1.12
   GOPACKAGENAME: github.com/cloudfoundry-community/s3-broker
 EOF
 
