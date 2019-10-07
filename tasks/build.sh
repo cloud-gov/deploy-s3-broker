@@ -34,5 +34,5 @@ env:
   GOPACKAGENAME: github.com/cloudfoundry-community/s3-broker
 EOF
 
-spruce merge broker-config/config-template.yml credentials.yml \
+spruce merge broker-config/"${CONFIG_FILE_NAME}".yml credentials.yml \
   > broker-src-built/config.yml
