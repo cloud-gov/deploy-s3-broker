@@ -727,7 +727,7 @@ resources:
     username: ((westb-cf-username))
     password: ((westb-cf-password))
     organization: ((westb-cf-organization))
-    space: ((west-cf-space))
+    space: ((westb-cf-space))
 
 - name: deploy-federalist-s3-broker-app-production
   type: cf
