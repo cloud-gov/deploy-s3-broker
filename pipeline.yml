@@ -34,6 +34,13 @@ westb-cf-creds: &westb-cf-creds
   CF_ORGANIZATION: ((westb-cf-organization))
   CF_SPACE: ((westb-cf-space))
 
+easta-cf-creds: &easta-cf-creds
+  CF_API_URL: ((easta-cf-api-url))
+  CF_USERNAME: ((easta-cf-username))
+  CF_PASSWORD: ((easta-cf-password))
+  CF_ORGANIZATION: ((easta-cf-organization))
+  CF_SPACE: ((easta-cf-space))
+
 jobs:
 - name: test-s3-broker
   plan:
@@ -420,6 +427,76 @@ jobs:
       username: ((slack-username))
       icon_url: ((slack-icon-url))
 
+- name: push-s3-broker-easta
+  serial: true
+  plan:
+  - in_parallel:
+    - get: broker-src
+      passed: [acceptance-tests-staging]
+      trigger: true
+    - get: broker-config
+      passed: [acceptance-tests-staging]
+      trigger: true
+    - get: pipeline-tasks
+  - task: build
+    file: broker-config/tasks/build.yml
+    params:
+      AUTH_USERNAME: ((easta-auth-name))
+      AUTH_PASSWORD: ((easta-auth-pass))
+      AWS_REGION: ((easta-aws-region))
+      AWS_PARTITION: aws-us-gov
+      USER_PREFIX: ((easta-user-prefix))
+      POLICY_PREFIX: ((easta-policy-prefix))
+      BUCKET_PREFIX: ((easta-bucket-prefix))
+      IAM_PATH: ((easta-iam-path))
+      CF_API_URL: ((easta-cf-api-url))
+      CF_CLIENT_ID: ((easta-cf-client-id))
+      CF_CLIENT_SECRET: ((easta-cf-client-secret))
+      CONFIG_FILE_NAME: base-config-template
+  - put: deploy-s3-broker-app-easta
+    params:
+      path: broker-src-built
+      manifest: broker-src-built/manifest.yml
+      current_app_name: s3-broker
+      environment_variables:
+        AWS_REGION: ((easta-aws-region))
+        AWS_ACCESS_KEY: ((easta-aws-access-key-id))
+        AWS_SECRET_ACCESS_KEY: ((easta-aws-secret-access-key))
+  - task: update-broker
+    file: pipeline-tasks/register-service-broker.yml
+    params:
+      <<: *easta-cf-creds
+      BROKER_NAME: s3-broker
+      AUTH_USER: ((easta-auth-name))
+      AUTH_PASS: ((easta-auth-pass))
+      SERVICES: s3
+  - task: update-broker-sandbox
+    file: pipeline-tasks/register-service-broker-sandboxes.yml
+    params:
+      <<: *easta-cf-creds
+      BROKER_NAME: s3-broker
+      AUTH_USER: ((easta-auth-name))
+      AUTH_PASS: ((easta-auth-pass))
+      SERVICES: s3:basic s3:basic-public
+  on_failure:
+    put: slack
+    params:
+      text: |
+        :x: FAILED to deploy s3-broker on easta
+        <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
+      channel: ((slack-channel))
+      username: ((slack-username))
+      icon_url: ((slack-icon-url))
+  on_success:
+    put: slack
+    params:
+      text: |
+        :white_check_mark: Successfully deployed s3-broker on easta
+        <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
+      channel: ((slack-channel))
+      username: ((slack-username))
+      icon_url: ((slack-icon-url))
+
 - name: push-federalist-s3-broker-production
   serial: true
   plan:
@@ -577,6 +654,53 @@ jobs:
         IS_DELETE: "true"
         ENCRYPTION: *encryption
 
+- name: acceptance-tests-easta
+  serial: true
+  plan:
+  - in_parallel:
+    - get: broker-src
+      passed: [push-s3-broker-easta]
+      trigger: true
+    - get: broker-config
+      passed: [push-s3-broker-easta]
+      trigger: true
+    - get: terraform-yaml-easta
+      trigger: true
+    - get: cf-easta-version
+      trigger: true
+  - in_parallel:
+    - task: acceptance-tests
+      file: broker-config/tasks/acceptance-tests.yml
+      params:
+        <<: *easta-cf-creds
+        APP_NAME: s3-acceptance-test
+        SERVICE_NAME: s3
+        PLAN_NAME: basic
+        SERVICE_INSTANCE_NAME: s3-acceptance-test
+        IS_PUBLIC: "false"
+        ENCRYPTION: *encryption
+    - task: acceptance-tests-public
+      file: broker-config/tasks/acceptance-tests.yml
+      params:
+        <<: *easta-cf-creds
+        APP_NAME: s3-acceptance-test-public
+        SERVICE_NAME: s3
+        PLAN_NAME: basic-public
+        SERVICE_INSTANCE_NAME: s3-acceptance-test-public
+        IS_PUBLIC: "true"
+        ENCRYPTION: *encryption
+    - task: acceptance-tests-public-delete
+      file: broker-config/tasks/acceptance-tests.yml
+      params:
+        <<: *easta-cf-creds
+        APP_NAME: s3-acceptance-test-public-delete
+        SERVICE_NAME: s3
+        PLAN_NAME: basic-public-sandbox
+        SERVICE_INSTANCE_NAME: s3-acceptance-test-public-delete
+        IS_PUBLIC: "true"
+        IS_DELETE: "true"
+        ENCRYPTION: *encryption
+
 - name: federalist-acceptance-tests-production
   serial: true
   plan:
@@ -690,6 +814,14 @@ resources:
     key: ((westb-semver-key))
     region_name: ((westb-semver-region))
 
+- name: cf-easta-version
+  type: semver-iam
+  source:
+    bucket: ((easta-semver-bucket))
+    driver: ((easta-semver-driver))
+    key: ((easta-semver-key))
+    region_name: ((easta-semver-region))
+
 - name: terraform-yaml-staging
   type: s3-iam
   source:
@@ -711,6 +843,13 @@ resources:
     region_name: ((westb-terraform-region))
     versioned_file: ((westb-terraform-file))
 
+- name: terraform-yaml-easta
+  type: s3-iam
+  source:
+    bucket: ((easta-terraform-bucket))
+    region_name: ((easta-terraform-region))
+    versioned_file: ((easta-terraform-file))
+
 - name: deploy-s3-broker-app-production
   type: cf
   source:
@@ -728,6 +867,15 @@ resources:
     password: ((westb-cf-password))
     organization: ((westb-cf-organization))
     space: ((westb-cf-space))
+
+- name: deploy-s3-broker-app-easta
+  type: cf
+  source:
+    api: ((easta-cf-api-url))
+    username: ((easta-cf-username))
+    password: ((easta-cf-password))
+    organization: ((easta-cf-organization))
+    space: ((easta-cf-space))
 
 - name: deploy-federalist-s3-broker-app-production
   type: cf
