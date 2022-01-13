@@ -27,6 +27,13 @@ production-cf-creds: &federalist-production-cf-creds
   CF_ORGANIZATION: ((federalist-production-cf-organization))
   CF_SPACE: ((federalist-production-cf-space))
 
+easta-cf-creds: &easta-cf-creds
+  CF_API_URL: ((easta-cf-api-url))
+  CF_USERNAME: ((easta-cf-username))
+  CF_PASSWORD: ((easta-cf-password))
+  CF_ORGANIZATION: ((easta-cf-organization))
+  CF_SPACE: ((easta-cf-space))
+
 westb-cf-creds: &westb-cf-creds
   CF_API_URL: ((westb-cf-api-url))
   CF_USERNAME: ((westb-cf-username))
@@ -345,6 +352,76 @@ jobs:
     params:
       text: |
         :white_check_mark: Successfully deployed s3-broker on production
+        <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
+      channel: ((slack-channel))
+      username: ((slack-username))
+      icon_url: ((slack-icon-url))
+
+- name: push-s3-broker-easta
+  serial: true
+  plan:
+  - in_parallel:
+    - get: broker-src
+      passed: [acceptance-tests-staging]
+      trigger: true
+    - get: broker-config
+      passed: [acceptance-tests-staging]
+      trigger: true
+    - get: pipeline-tasks
+  - task: build
+    file: broker-config/tasks/build.yml
+    params:
+      AUTH_USERNAME: ((easta-auth-name))
+      AUTH_PASSWORD: ((easta-auth-pass))
+      AWS_REGION: ((easta-aws-region))
+      AWS_PARTITION: aws-us-gov
+      USER_PREFIX: ((easta-user-prefix))
+      POLICY_PREFIX: ((easta-policy-prefix))
+      BUCKET_PREFIX: ((easta-bucket-prefix))
+      IAM_PATH: ((easta-iam-path))
+      CF_API_URL: ((easta-cf-api-url))
+      CF_CLIENT_ID: ((easta-cf-client-id))
+      CF_CLIENT_SECRET: ((easta-cf-client-secret))
+      CONFIG_FILE_NAME: base-config-template
+  - put: deploy-s3-broker-app-easta
+    params:
+      path: broker-src-built
+      manifest: broker-src-built/manifest.yml
+      current_app_name: s3-broker
+      environment_variables:
+        AWS_REGION: ((easta-aws-region))
+        AWS_ACCESS_KEY: ((easta-aws-access-key-id))
+        AWS_SECRET_ACCESS_KEY: ((easta-aws-secret-access-key))
+  - task: update-broker
+    file: pipeline-tasks/register-service-broker.yml
+    params:
+      <<: *easta-cf-creds
+      BROKER_NAME: s3-broker
+      AUTH_USER: ((easta-auth-name))
+      AUTH_PASS: ((easta-auth-pass))
+      SERVICES: s3
+  - task: update-broker-sandbox
+    file: pipeline-tasks/register-service-broker-sandboxes.yml
+    params:
+      <<: *easta-cf-creds
+      BROKER_NAME: s3-broker
+      AUTH_USER: ((easta-auth-name))
+      AUTH_PASS: ((easta-auth-pass))
+      SERVICES: s3:basic s3:basic-public
+  on_failure:
+    put: slack
+    params:
+      text: |
+        :x: FAILED to deploy s3-broker on easta
+        <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
+      channel: ((slack-channel))
+      username: ((slack-username))
+      icon_url: ((slack-icon-url))
+  on_success:
+    put: slack
+    params:
+      text: |
+        :white_check_mark: Successfully deployed s3-broker on easta
         <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
       channel: ((slack-channel))
       username: ((slack-username))
@@ -719,6 +796,15 @@ resources:
     password: ((production-cf-password))
     organization: ((production-cf-organization))
     space: ((production-cf-space))
+
+- name: deploy-s3-broker-app-easta
+  type: cf
+  source:
+    api: ((easta-cf-api-url))
+    username: ((easta-cf-username))
+    password: ((easta-cf-password))
+    organization: ((easta-cf-organization))
+    space: ((easta-cf-space))
 
 - name: deploy-s3-broker-app-westb
   type: cf
