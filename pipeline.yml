@@ -517,12 +517,14 @@ resources:
   source:
     uri: ((s3-broker-config-url))
     branch: ((s3-broker-config-branch))
+    commit_verification_keys: ((cloud-gov-pgp-keys))
 
 - name: pipeline-tasks
   type: git
   source:
     uri: ((pipeline-tasks-git-url))
     branch: ((pipeline-tasks-git-branch))
+    commit_verification_keys: ((cloud-gov-pgp-keys))
 
 - name: deploy-s3-broker-app-staging
   type: cf
