@@ -553,6 +553,42 @@ jobs:
         IS_PUBLIC: "true"
         ENCRYPTION: *encryption
 
+- name: pages-acceptance-tests-production
+  serial: true
+  plan:
+  - in_parallel:
+    - get: broker-src
+      passed: [push-pages-s3-broker-production]
+      trigger: true
+    - get: broker-config
+      passed: [push-pages-s3-broker-production]
+      trigger: true
+    - get: terraform-yaml-production
+      trigger: true
+    - get: cf-production-version
+      trigger: true
+  - in_parallel:
+    - task: acceptance-tests
+      file: broker-config/tasks/acceptance-tests.yml
+      params:
+        <<: *federalist-production-cf-creds
+        APP_NAME: pages-s3-acceptance-test
+        SERVICE_NAME: pages-s3
+        PLAN_NAME: basic
+        SERVICE_INSTANCE_NAME: pages-s3-acceptance-test
+        IS_PUBLIC: "false"
+        ENCRYPTION: *encryption
+    - task: acceptance-tests-vpc
+      file: broker-config/tasks/acceptance-tests.yml
+      params:
+        <<: *federalist-production-cf-creds
+        APP_NAME: pages-s3-acceptance-test-vpc
+        SERVICE_NAME: pages-s3
+        PLAN_NAME: basic-vpc
+        SERVICE_INSTANCE_NAME: pages-s3-acceptance-test-vpc
+        IS_PUBLIC: "false"
+        ENCRYPTION: *encryption
+
 resource_types:
 - name: slack-notification
   type: docker-image
