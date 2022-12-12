@@ -406,6 +406,70 @@ jobs:
       username: ((slack-username))
       icon_url: ((slack-icon-url))
 
+- name: push-pages-s3-broker-production
+  serial: true
+  plan:
+  - in_parallel:
+    - get: broker-src
+      passed: [federalist-acceptance-tests-staging]
+      trigger: true
+    - get: broker-config
+      passed: [federalist-acceptance-tests-staging]
+      trigger: true
+    - get: pipeline-tasks
+  - task: build
+    file: broker-config/tasks/build.yml
+    params:
+      AUTH_USERNAME: ((production-auth-name))
+      AUTH_PASSWORD: ((production-auth-pass))
+      AWS_REGION: ((federalist-production-aws-region))
+      AWS_PARTITION: aws-us-gov
+      USER_PREFIX: ((federalist-production-user-prefix))
+      POLICY_PREFIX: ((federalist-production-policy-prefix))
+      BUCKET_PREFIX: ((federalist-production-bucket-prefix))
+      IAM_PATH: ((federalist-production-iam-path))
+      CF_API_URL: ((production-cf-api-url))
+      CF_CLIENT_ID: ((production-cf-client-id))
+      CF_CLIENT_SECRET: ((production-cf-client-secret))
+      CONFIG_FILE_NAME: pages-config-template
+  - put: deploy-pages-s3-broker-app-production
+    params:
+      path: broker-src-built
+      manifest: broker-src-built/manifest.yml
+      current_app_name: pages-s3-broker
+      environment_variables:
+        AWS_REGION: ((federalist-production-aws-region))
+        AWS_ACCESS_KEY: ((federalist-production-aws-access-key-id))
+        AWS_SECRET_ACCESS_KEY: ((federalist-production-aws-secret-access-key))
+  - task: update-broker
+    file: pipeline-tasks/register-service-broker.yml
+    params:
+      <<: *production-cf-creds
+      BROKER_NAME: pages-s3-broker
+      AUTH_USER: ((production-auth-name))
+      AUTH_PASS: ((production-auth-pass))
+      SERVICES: pages-s3:basic pages-s3:basic-vpc
+      SERVICE_ORGANIZATION: gsa-18f-federalist
+  on_failure:
+    put: slack
+    params:
+      text: |
+        :x: FAILED to deploy pages-s3-broker on production
+        <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
+      channel: ((slack-channel))
+      username: ((slack-username))
+      icon_url: ((slack-icon-url))
+  on_success:
+    put: slack
+    params:
+      text: |
+        :white_check_mark: Successfully deployed pages-s3-broker on production
+        <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
+      channel: ((slack-channel))
+      username: ((slack-username))
+      icon_url: ((slack-icon-url))
+
+
 - name: acceptance-tests-production
   serial: true
   plan:
