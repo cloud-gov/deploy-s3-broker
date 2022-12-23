@@ -133,7 +133,7 @@ s3_config:
                       ],
                       "Condition": {
                           "StringEquals": {
-                              "aws:SourceVpce": "{{INTERNAL_VPCE}}"
+                              "aws:SourceVpce": "$INTERNAL_VPCE_ID"
                           }
                       }
                   }

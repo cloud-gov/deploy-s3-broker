@@ -33,5 +33,10 @@ env:
   GOPACKAGENAME: github.com/cloudfoundry-community/s3-broker
 EOF
 
-spruce merge broker-config/"${CONFIG_FILE_NAME}".yml credentials.yml \
+# if a the config-template has the variable $INTERNAL_VPCE_ID
+# in it then replace with passed in envar value $INTERNAL_VPCE_ID
+regex="s/\$INTERNAL_VPCE_ID/${INTERNAL_VPCE_ID}/"
+sed $regex broker-config/"${CONFIG_FILE_NAME}".yml > "${CONFIG_FILE_NAME}-rendered".yml
+
+spruce merge "${CONFIG_FILE_NAME}-rendered".yml credentials.yml \
   > broker-src-built/config.yml
