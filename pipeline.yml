@@ -806,6 +806,15 @@ resources:
     organization: ((production-cf-organization))
     space: ((production-cf-space))
 
+- name: deploy-pages-s3-broker-app-production
+  type: cf
+  source:
+    api: ((production-cf-api-url))
+    username: ((production-cf-username))
+    password: ((production-cf-password))
+    organization: ((production-cf-organization))
+    space: ((production-cf-space))
+    
 - name: cf-development-version
   type: semver-iam
   source:
