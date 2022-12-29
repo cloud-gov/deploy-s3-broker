@@ -1,4 +1,11 @@
 ---
+development-cf-creds: &development-cf-creds
+  CF_API_URL: ((development-cf-api-url))
+  CF_USERNAME: ((development-cf-username))
+  CF_PASSWORD: ((development-cf-password))
+  CF_ORGANIZATION: ((development-cf-organization))
+  CF_SPACE: ((development-cf-space))
+
 staging-cf-creds: &staging-cf-creds
   CF_API_URL: ((staging-cf-api-url))
   CF_USERNAME: ((staging-cf-username))
@@ -37,6 +44,133 @@ jobs:
       trigger: true
   - task: test
     file: broker-config/tasks/test.yml
+
+- name: push-s3-broker-development
+  serial: true
+  plan:
+  - in_parallel:
+    - get: broker-src
+      passed: [test-s3-broker]
+      trigger: true
+    - get: broker-config
+      passed: [test-s3-broker]
+      trigger: true
+    - get: pipeline-tasks
+  - task: build
+    file: broker-config/tasks/build.yml
+    params:
+      AUTH_USERNAME: ((development-auth-name))
+      AUTH_PASSWORD: ((development-auth-pass))
+      AWS_REGION: ((development-aws-region))
+      AWS_PARTITION: aws-us-gov
+      USER_PREFIX: ((development-user-prefix))
+      POLICY_PREFIX: ((development-policy-prefix))
+      BUCKET_PREFIX: ((development-bucket-prefix))
+      IAM_PATH: ((development-iam-path))
+      CF_API_URL: ((development-cf-api-url))
+      CF_CLIENT_ID: ((development-cf-client-id))
+      CF_CLIENT_SECRET: ((development-cf-client-secret))
+      CONFIG_FILE_NAME: base-config-template
+  - put: deploy-s3-broker-app-development
+    params:
+      path: broker-src-built
+      manifest: broker-src-built/manifest.yml
+      current_app_name: s3-broker
+      environment_variables:
+        AWS_REGION: ((development-aws-region))
+        AWS_ACCESS_KEY: ((development-aws-access-key-id))
+        AWS_SECRET_ACCESS_KEY: ((development-aws-secret-access-key))
+  - task: update-broker
+    file: pipeline-tasks/register-service-broker.yml
+    params:
+      <<: *development-cf-creds
+      BROKER_NAME: s3-broker
+      AUTH_USER: ((development-auth-name))
+      AUTH_PASS: ((development-auth-pass))
+      SERVICES: s3
+  - task: update-broker-sandbox
+    file: pipeline-tasks/register-service-broker-sandboxes.yml
+    params:
+      <<: *development-cf-creds
+      BROKER_NAME: s3-broker
+      AUTH_USER: ((development-auth-name))
+      AUTH_PASS: ((development-auth-pass))
+      SERVICES: s3:basic s3:basic-public
+
+  on_failure:
+    put: slack
+    params:
+      text: |
+        :x: FAILED to deploy s3-broker on development
+        <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
+      channel: ((slack-channel))
+      username: ((slack-username))
+      icon_url: ((slack-icon-url))
+  on_success:
+    put: slack
+    params:
+      text: |
+        :white_check_mark: Successfully deployed s3-broker on development
+        <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
+      channel: ((slack-channel))
+      username: ((slack-username))
+      icon_url: ((slack-icon-url))
+
+- name: acceptance-tests-development
+  serial: true
+  plan:
+  - in_parallel:
+    - get: broker-src
+      passed: [push-s3-broker-development]
+      trigger: true
+    - get: broker-config
+      passed: [push-s3-broker-development]
+      trigger: true
+    - get: terraform-yaml-development
+      trigger: true
+    - get: cf-development-version
+      trigger: true
+  - in_parallel:
+    - task: acceptance-tests
+      file: broker-config/tasks/acceptance-tests.yml
+      params:
+        <<: *development-cf-creds
+        APP_NAME: s3-acceptance-test
+        SERVICE_NAME: s3
+        PLAN_NAME: basic
+        SERVICE_INSTANCE_NAME: s3-acceptance-test
+        IS_PUBLIC: "false"
+        ENCRYPTION: &encryption |-
+          {
+            "Rules": [
+              {
+                "ApplyServerSideEncryptionByDefault": {
+                  "SSEAlgorithm": "AES256"
+                }
+              }
+            ]
+          }
+    - task: acceptance-tests-public
+      file: broker-config/tasks/acceptance-tests.yml
+      params:
+        <<: *development-cf-creds
+        APP_NAME: s3-acceptance-test-public
+        SERVICE_NAME: s3
+        PLAN_NAME: basic-public
+        SERVICE_INSTANCE_NAME: s3-acceptance-test-public
+        IS_PUBLIC: "true"
+        ENCRYPTION: *encryption
+    - task: acceptance-tests-public-delete
+      file: broker-config/tasks/acceptance-tests.yml
+      params:
+        <<: *development-cf-creds
+        APP_NAME: s3-acceptance-test-public-delete
+        SERVICE_NAME: s3
+        PLAN_NAME: basic-public-sandbox
+        SERVICE_INSTANCE_NAME: s3-acceptance-test-public-delete
+        IS_PUBLIC: "true"
+        IS_DELETE: "true"
+        ENCRYPTION: *encryption
 
 - name: push-s3-broker-staging
   serial: true
@@ -406,6 +540,71 @@ jobs:
       username: ((slack-username))
       icon_url: ((slack-icon-url))
 
+- name: push-pages-s3-broker-production
+  serial: true
+  plan:
+  - in_parallel:
+    - get: broker-src
+      passed: [federalist-acceptance-tests-staging]
+      trigger: true
+    - get: broker-config
+      passed: [federalist-acceptance-tests-staging]
+      trigger: true
+    - get: pipeline-tasks
+  - task: build
+    file: broker-config/tasks/build.yml
+    params:
+      AUTH_USERNAME: ((production-auth-name))
+      AUTH_PASSWORD: ((production-auth-pass))
+      AWS_REGION: ((federalist-production-aws-region))
+      AWS_PARTITION: aws-us-gov
+      USER_PREFIX: ((federalist-production-user-prefix))
+      POLICY_PREFIX: ((federalist-production-policy-prefix))
+      BUCKET_PREFIX: ((federalist-production-bucket-prefix))
+      INTERNAL_VPCE_ID: ((production-s3-vpce_id))
+      IAM_PATH: ((federalist-production-iam-path))
+      CF_API_URL: ((production-cf-api-url))
+      CF_CLIENT_ID: ((production-cf-client-id))
+      CF_CLIENT_SECRET: ((production-cf-client-secret))
+      CONFIG_FILE_NAME: pages-config-template
+  - put: deploy-pages-s3-broker-app-production
+    params:
+      path: broker-src-built
+      manifest: broker-src-built/manifest.yml
+      current_app_name: pages-s3-broker
+      environment_variables:
+        AWS_REGION: ((federalist-production-aws-region))
+        AWS_ACCESS_KEY: ((federalist-production-aws-access-key-id))
+        AWS_SECRET_ACCESS_KEY: ((federalist-production-aws-secret-access-key))
+  - task: update-broker
+    file: pipeline-tasks/register-service-broker.yml
+    params:
+      <<: *production-cf-creds
+      BROKER_NAME: pages-s3-broker
+      AUTH_USER: ((production-auth-name))
+      AUTH_PASS: ((production-auth-pass))
+      SERVICES: pages-s3:basic pages-s3:basic-vpc
+      SERVICE_ORGANIZATION: gsa-18f-federalist
+  on_failure:
+    put: slack
+    params:
+      text: |
+        :x: FAILED to deploy pages-s3-broker on production
+        <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
+      channel: ((slack-channel))
+      username: ((slack-username))
+      icon_url: ((slack-icon-url))
+  on_success:
+    put: slack
+    params:
+      text: |
+        :white_check_mark: Successfully deployed pages-s3-broker on production
+        <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
+      channel: ((slack-channel))
+      username: ((slack-username))
+      icon_url: ((slack-icon-url))
+
+
 - name: acceptance-tests-production
   serial: true
   plan:
@@ -489,6 +688,42 @@ jobs:
         IS_PUBLIC: "true"
         ENCRYPTION: *encryption
 
+- name: pages-acceptance-tests-production
+  serial: true
+  plan:
+  - in_parallel:
+    - get: broker-src
+      passed: [push-pages-s3-broker-production]
+      trigger: true
+    - get: broker-config
+      passed: [push-pages-s3-broker-production]
+      trigger: true
+    - get: terraform-yaml-production
+      trigger: true
+    - get: cf-production-version
+      trigger: true
+  - in_parallel:
+    - task: acceptance-tests
+      file: broker-config/tasks/acceptance-tests.yml
+      params:
+        <<: *federalist-production-cf-creds
+        APP_NAME: pages-s3-acceptance-test
+        SERVICE_NAME: pages-s3
+        PLAN_NAME: basic
+        SERVICE_INSTANCE_NAME: pages-s3-acceptance-test
+        IS_PUBLIC: "false"
+        ENCRYPTION: *encryption
+    - task: acceptance-tests-vpc
+      file: broker-config/tasks/acceptance-tests.yml
+      params:
+        <<: *federalist-production-cf-creds
+        APP_NAME: pages-s3-acceptance-test-vpc
+        SERVICE_NAME: pages-s3
+        PLAN_NAME: basic-vpc
+        SERVICE_INSTANCE_NAME: pages-s3-acceptance-test-vpc
+        IS_PUBLIC: "true"
+        ENCRYPTION: *encryption
+
 resource_types:
 - name: slack-notification
   type: docker-image
@@ -526,6 +761,15 @@ resources:
     branch: ((pipeline-tasks-git-branch))
     commit_verification_keys: ((cloud-gov-pgp-keys))
 
+- name: deploy-s3-broker-app-development
+  type: cf
+  source:
+    api: ((development-cf-api-url))
+    username: ((development-cf-username))
+    password: ((development-cf-password))
+    organization: ((development-cf-organization))
+    space: ((development-cf-space))
+
 - name: deploy-s3-broker-app-staging
   type: cf
   source:
@@ -544,36 +788,6 @@ resources:
     organization: ((staging-cf-organization))
     space: ((staging-cf-space))
 
-- name: cf-staging-version
-  type: semver-iam
-  source:
-    bucket: ((staging-semver-bucket))
-    driver: ((staging-semver-driver))
-    key: ((staging-semver-key))
-    region_name: ((staging-semver-region))
-
-- name: cf-production-version
-  type: semver-iam
-  source:
-    bucket: ((production-semver-bucket))
-    driver: ((production-semver-driver))
-    key: ((production-semver-key))
-    region_name: ((production-semver-region))
-
-- name: terraform-yaml-staging
-  type: s3-iam
-  source:
-    bucket: ((staging-terraform-bucket))
-    region_name: ((staging-terraform-region))
-    versioned_file: ((staging-terraform-file))
-
-- name: terraform-yaml-production
-  type: s3-iam
-  source:
-    bucket: ((production-terraform-bucket))
-    region_name: ((production-terraform-region))
-    versioned_file: ((production-terraform-file))
-
 - name: deploy-s3-broker-app-production
   type: cf
   source:
@@ -591,6 +805,60 @@ resources:
     password: ((production-cf-password))
     organization: ((production-cf-organization))
     space: ((production-cf-space))
+
+- name: deploy-pages-s3-broker-app-production
+  type: cf
+  source:
+    api: ((production-cf-api-url))
+    username: ((production-cf-username))
+    password: ((production-cf-password))
+    organization: ((production-cf-organization))
+    space: ((production-cf-space))
+    
+- name: cf-development-version
+  type: semver-iam
+  source:
+    bucket: ((development-semver-bucket))
+    driver: ((development-semver-driver))
+    key: ((development-semver-key))
+    region_name: ((development-semver-region))
+
+- name: cf-staging-version
+  type: semver-iam
+  source:
+    bucket: ((staging-semver-bucket))
+    driver: ((staging-semver-driver))
+    key: ((staging-semver-key))
+    region_name: ((staging-semver-region))
+
+- name: cf-production-version
+  type: semver-iam
+  source:
+    bucket: ((production-semver-bucket))
+    driver: ((production-semver-driver))
+    key: ((production-semver-key))
+    region_name: ((production-semver-region))
+
+- name: terraform-yaml-development
+  type: s3-iam
+  source:
+    bucket: ((development-terraform-bucket))
+    region_name: ((development-terraform-region))
+    versioned_file: ((development-terraform-file))
+
+- name: terraform-yaml-staging
+  type: s3-iam
+  source:
+    bucket: ((staging-terraform-bucket))
+    region_name: ((staging-terraform-region))
+    versioned_file: ((staging-terraform-file))
+
+- name: terraform-yaml-production
+  type: s3-iam
+  source:
+    bucket: ((production-terraform-bucket))
+    region_name: ((production-terraform-region))
+    versioned_file: ((production-terraform-file))
 
 - name: slack
   type: slack-notification
