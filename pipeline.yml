@@ -121,10 +121,10 @@ jobs:
   plan:
   - in_parallel:
     - get: broker-src
-      passed: [push-s3-broker-dev]
+      passed: [push-s3-broker-development]
       trigger: true
     - get: broker-config
-      passed: [push-s3-broker-dev]
+      passed: [push-s3-broker-development]
       trigger: true
     - get: terraform-yaml-development
       trigger: true
