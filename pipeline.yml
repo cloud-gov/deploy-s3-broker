@@ -721,7 +721,7 @@ jobs:
         SERVICE_NAME: pages-s3
         PLAN_NAME: basic-vpc
         SERVICE_INSTANCE_NAME: pages-s3-acceptance-test-vpc
-        IS_PUBLIC: "false"
+        IS_PUBLIC: "true"
         ENCRYPTION: *encryption
 
 resource_types:
