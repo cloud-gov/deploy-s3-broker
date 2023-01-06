@@ -129,3 +129,42 @@ s3_config:
               ]
             }
           encryption: *encryption
+      - id: F36820DC-FDB6-496C-9D96-68861F5D0D96
+        name: basic-vpc
+        description: A single bucket with unlimited storage, where the files can only be read from within the vpc
+        free: true
+        deletable: false
+        metadata:
+          bullets:
+          - Single S3 bucket
+          - Unlimited storage, unlimited number of objects
+          costs:
+          - amount:
+              usd: 0.03
+            unit: Per GB
+        s3_properties:
+          iam_policy: *iam-policy
+          bucket_policy: |-
+            {
+              "Version": "2012-10-17",
+              "Statement": [
+                  {
+                      "Effect": "Allow",
+                      "Principal": "*",
+                      "Action": [
+                          "s3:GetObject",
+                          "s3:GetObjectVersion"
+                      ],
+                      "Resource": [
+                          "arn:{{.AwsPartition}}:s3:::{{.BucketName}}",
+                          "arn:{{.AwsPartition}}:s3:::{{.BucketName}}/*"
+                      ],
+                      "Condition": {
+                          "StringEquals": {
+                              "aws:SourceVpce": "$INTERNAL_VPCE_ID"
+                          }
+                      }
+                  }
+              ]
+            }
+          encryption: *encryption
