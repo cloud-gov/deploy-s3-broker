@@ -521,7 +521,7 @@ jobs:
       BROKER_NAME: federalist-s3-broker
       AUTH_USER: ((production-auth-name))
       AUTH_PASS: ((production-auth-pass))
-      SERVICES: federalist-s3:basic federalist-s3:basic-public
+      SERVICES: federalist-s3:basic federalist-s3:basic-public federalist-s3:basic-vpc
       SERVICE_ORGANIZATION: gsa-18f-federalist
   on_failure:
     put: slack
@@ -689,7 +689,17 @@ jobs:
         SERVICE_INSTANCE_NAME: federalist-s3-acceptance-test-public
         IS_PUBLIC: "true"
         ENCRYPTION: *encryption
-
+    - task: acceptance-tests-vpc
+      file: broker-config/tasks/acceptance-tests.yml
+      params:
+        <<: *federalist-production-cf-creds
+        APP_NAME: federalist-s3-acceptance-test-vpc
+        SERVICE_NAME: federalist-s3
+        PLAN_NAME: basic-vpc
+        SERVICE_INSTANCE_NAME: federalist-s3-acceptance-test-vpc
+        IS_PUBLIC: "true"
+        ENCRYPTION: *encryption
+        
 - name: pages-acceptance-tests-production
   serial: true
   plan:
