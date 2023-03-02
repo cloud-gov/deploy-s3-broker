@@ -757,7 +757,7 @@ resources:
   type: git
   source:
     uri: ((s3-broker-app-url))
-    branch: ((s3-broker-app-branch))
+    branch: update-s3-broker-cflinuxsf4
 
 - name: broker-config
   type: git
