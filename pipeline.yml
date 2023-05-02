@@ -146,7 +146,8 @@ jobs:
               {
                 "ApplyServerSideEncryptionByDefault": {
                   "SSEAlgorithm": "AES256"
-                }
+                },
+                "BucketKeyEnabled": false
               }
             ]
           }
@@ -337,7 +338,8 @@ jobs:
               {
                 "ApplyServerSideEncryptionByDefault": {
                   "SSEAlgorithm": "AES256"
-                }
+                },
+                "BucketKeyEnabled": false
               }
             ]
           }
@@ -393,7 +395,8 @@ jobs:
               {
                 "ApplyServerSideEncryptionByDefault": {
                   "SSEAlgorithm": "AES256"
-                }
+                },
+                "BucketKeyEnabled": false
               }
             ]
           }
