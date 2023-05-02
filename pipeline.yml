@@ -67,7 +67,7 @@ jobs:
       trigger: true
     - get: pipeline-tasks
   - task: build
-    file: broker-config-dev/tasks/build.yml
+    file: broker-config-dev/tasks/build-dev.yml
     params:
       AUTH_USERNAME: ((development-auth-name))
       AUTH_PASSWORD: ((development-auth-pass))
