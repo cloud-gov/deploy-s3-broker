@@ -45,15 +45,25 @@ jobs:
   - task: test
     file: broker-config/tasks/test.yml
 
+- name: test-s3-broker-dev
+  plan:
+  - in_parallel:
+    - get: broker-src-dev
+      trigger: true
+    - get: broker-config
+      trigger: true
+  - task: test
+    file: broker-config/tasks/test-dev.yml
+
 - name: push-s3-broker-development
   serial: true
   plan:
   - in_parallel:
-    - get: broker-src
-      passed: [test-s3-broker]
+    - get: broker-src-dev
+      passed: [test-s3-broker-dev]
       trigger: true
     - get: broker-config
-      passed: [test-s3-broker]
+      passed: [test-s3-broker-dev]
       trigger: true
     - get: pipeline-tasks
   - task: build
@@ -120,7 +130,7 @@ jobs:
   serial: true
   plan:
   - in_parallel:
-    - get: broker-src
+    - get: broker-src-dev
       passed: [push-s3-broker-development]
       trigger: true
     - get: broker-config
@@ -761,6 +771,12 @@ resources:
   source:
     uri: ((s3-broker-app-url))
     branch: ((s3-broker-app-branch))
+
+- name: broker-src-dev
+  type: git
+  source:
+    uri: ((s3-broker-app-url))
+    branch: ((s3-broker-app-branch-dev))
 
 - name: broker-config
   type: git
