@@ -14,4 +14,4 @@ outputs:
 - name: broker-src-built
 
 run:
-  path: broker-config-dev/tasks/build.sh
+  path: broker-config-dev/tasks/build-dev.sh
