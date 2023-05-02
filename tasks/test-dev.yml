@@ -13,4 +13,4 @@ inputs:
 - name: broker-config-dev
 
 run:
-  path: broker-config/tasks/test.sh
+  path: broker-config-dev/tasks/test.sh
