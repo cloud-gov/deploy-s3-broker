@@ -67,7 +67,7 @@ jobs:
       trigger: true
     - get: pipeline-tasks
   - task: build
-    file: broker-config/tasks/build.yml
+    file: broker-config-dev/tasks/build.yml
     params:
       AUTH_USERNAME: ((development-auth-name))
       AUTH_PASSWORD: ((development-auth-pass))
@@ -142,7 +142,7 @@ jobs:
       trigger: true
   - in_parallel:
     - task: acceptance-tests
-      file: broker-config/tasks/acceptance-tests.yml
+      file: broker-config-dev/tasks/acceptance-tests-dev.yml
       params:
         <<: *development-cf-creds
         APP_NAME: s3-acceptance-test
@@ -162,7 +162,7 @@ jobs:
             ]
           }
     - task: acceptance-tests-public
-      file: broker-config/tasks/acceptance-tests.yml
+      file: broker-config-dev/tasks/acceptance-tests-dev.yml
       params:
         <<: *development-cf-creds
         APP_NAME: s3-acceptance-test-public
@@ -172,7 +172,7 @@ jobs:
         IS_PUBLIC: "true"
         ENCRYPTION: *encryption
     - task: acceptance-tests-public-delete
-      file: broker-config/tasks/acceptance-tests.yml
+      file: broker-config/tasks/acceptance-tests-dev.yml
       params:
         <<: *development-cf-creds
         APP_NAME: s3-acceptance-test-public-delete
