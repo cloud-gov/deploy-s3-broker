@@ -53,7 +53,7 @@ jobs:
     - get: broker-config-dev
       trigger: true
   - task: test
-    file: broker-config/tasks/test-dev.yml
+    file: broker-config-dev/tasks/test-dev.yml
 
 - name: push-s3-broker-development
   serial: true
