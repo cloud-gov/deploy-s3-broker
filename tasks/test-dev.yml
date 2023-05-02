@@ -10,7 +10,7 @@ image_resource:
 inputs:
 - name: broker-src-dev
   path: s3-broker
-- name: broker-config
+- name: broker-config-dev
 
 run:
   path: broker-config/tasks/test.sh
