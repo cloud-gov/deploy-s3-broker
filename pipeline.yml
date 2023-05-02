@@ -172,7 +172,7 @@ jobs:
         IS_PUBLIC: "true"
         ENCRYPTION: *encryption
     - task: acceptance-tests-public-delete
-      file: broker-config/tasks/acceptance-tests-dev.yml
+      file: broker-config-dev/tasks/acceptance-tests-dev.yml
       params:
         <<: *development-cf-creds
         APP_NAME: s3-acceptance-test-public-delete
