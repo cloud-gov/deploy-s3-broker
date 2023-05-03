@@ -10,4 +10,4 @@ inputs:
 - name: broker-src-dev
 
 run:
-  path: broker-src-dev/ci/acceptance/run.sh
+  path: broker-src-dev/ci/acceptance/run-dev.sh
