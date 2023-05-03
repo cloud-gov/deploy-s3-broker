@@ -6,7 +6,7 @@ s3_config:
   user_prefix: cf
   policy_prefix: cf
   bucket_prefix: cf
-  allow_user_provision_parameters: false
+  allow_user_provision_parameters: true
   allow_user_update_parameters: false
   catalog:
     services:
