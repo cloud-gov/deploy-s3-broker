@@ -45,19 +45,29 @@ jobs:
   - task: test
     file: broker-config/tasks/test.yml
 
+- name: test-s3-broker-dev
+  plan:
+  - in_parallel:
+    - get: broker-src-dev
+      trigger: true
+    - get: broker-config-dev
+      trigger: true
+  - task: test
+    file: broker-config-dev/tasks/test-dev.yml
+
 - name: push-s3-broker-development
   serial: true
   plan:
   - in_parallel:
-    - get: broker-src
-      passed: [test-s3-broker]
+    - get: broker-src-dev
+      passed: [test-s3-broker-dev]
       trigger: true
-    - get: broker-config
-      passed: [test-s3-broker]
+    - get: broker-config-dev
+      passed: [test-s3-broker-dev]
       trigger: true
     - get: pipeline-tasks
   - task: build
-    file: broker-config/tasks/build.yml
+    file: broker-config-dev/tasks/build-dev.yml
     params:
       AUTH_USERNAME: ((development-auth-name))
       AUTH_PASSWORD: ((development-auth-pass))
@@ -99,20 +109,20 @@ jobs:
 
   on_failure:
     put: slack
-    params:
+    params: &slack-channel-failure
       text: |
         :x: FAILED to deploy s3-broker on development
         <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
-      channel: ((slack-channel))
+      channel: ((slack-channel-failure))
       username: ((slack-username))
       icon_url: ((slack-icon-url))
   on_success:
     put: slack
-    params:
+    params: &slack-channel-success
       text: |
         :white_check_mark: Successfully deployed s3-broker on development
         <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
-      channel: ((slack-channel))
+      channel: ((slack-channel-success))
       username: ((slack-username))
       icon_url: ((slack-icon-url))
 
@@ -120,10 +130,10 @@ jobs:
   serial: true
   plan:
   - in_parallel:
-    - get: broker-src
+    - get: broker-src-dev
       passed: [push-s3-broker-development]
       trigger: true
-    - get: broker-config
+    - get: broker-config-dev
       passed: [push-s3-broker-development]
       trigger: true
     - get: terraform-yaml-development
@@ -132,7 +142,7 @@ jobs:
       trigger: true
   - in_parallel:
     - task: acceptance-tests
-      file: broker-config/tasks/acceptance-tests.yml
+      file: broker-config-dev/tasks/acceptance-tests-dev.yml
       params:
         <<: *development-cf-creds
         APP_NAME: s3-acceptance-test
@@ -152,7 +162,7 @@ jobs:
             ]
           }
     - task: acceptance-tests-public
-      file: broker-config/tasks/acceptance-tests.yml
+      file: broker-config-dev/tasks/acceptance-tests-dev.yml
       params:
         <<: *development-cf-creds
         APP_NAME: s3-acceptance-test-public
@@ -162,7 +172,7 @@ jobs:
         IS_PUBLIC: "true"
         ENCRYPTION: *encryption
     - task: acceptance-tests-public-delete
-      file: broker-config/tasks/acceptance-tests.yml
+      file: broker-config-dev/tasks/acceptance-tests-dev.yml
       params:
         <<: *development-cf-creds
         APP_NAME: s3-acceptance-test-public-delete
@@ -228,21 +238,17 @@ jobs:
   on_failure:
     put: slack
     params:
+      <<: *slack-channel-failure
       text: |
         :x: FAILED to deploy s3-broker on staging
         <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
-      channel: ((slack-channel))
-      username: ((slack-username))
-      icon_url: ((slack-icon-url))
   on_success:
     put: slack
     params:
+      <<: *slack-channel-success
       text: |
         :white_check_mark: Successfully deployed s3-broker on staging
         <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
-      channel: ((slack-channel))
-      username: ((slack-username))
-      icon_url: ((slack-icon-url))
 
 - name: push-federalist-s3-broker-staging
   serial: true
@@ -292,21 +298,17 @@ jobs:
   on_failure:
     put: slack
     params:
+      <<: *slack-channel-failure
       text: |
         :x: FAILED to deploy federalist-s3-broker on staging
         <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
-      channel: ((slack-channel))
-      username: ((slack-username))
-      icon_url: ((slack-icon-url))
   on_success:
     put: slack
     params:
+      <<: *slack-channel-success
       text: |
         :white_check_mark: Successfully deployed federalist-s3-broker on staging
         <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
-      channel: ((slack-channel))
-      username: ((slack-username))
-      icon_url: ((slack-icon-url))
 
 - name: acceptance-tests-staging
   serial: true
@@ -465,21 +467,17 @@ jobs:
   on_failure:
     put: slack
     params:
+      <<: *slack-channel-failure
       text: |
         :x: FAILED to deploy s3-broker on production
         <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
-      channel: ((slack-channel))
-      username: ((slack-username))
-      icon_url: ((slack-icon-url))
   on_success:
     put: slack
     params:
+      <<: *slack-channel-success
       text: |
         :white_check_mark: Successfully deployed s3-broker on production
         <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
-      channel: ((slack-channel))
-      username: ((slack-username))
-      icon_url: ((slack-icon-url))
 
 - name: push-federalist-s3-broker-production
   serial: true
@@ -529,21 +527,17 @@ jobs:
   on_failure:
     put: slack
     params:
+      <<: *slack-channel-failure
       text: |
         :x: FAILED to deploy federalist-s3-broker on production
         <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
-      channel: ((slack-channel))
-      username: ((slack-username))
-      icon_url: ((slack-icon-url))
   on_success:
     put: slack
     params:
+      <<: *slack-channel-success
       text: |
         :white_check_mark: Successfully deployed federalist-s3-broker on production
         <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
-      channel: ((slack-channel))
-      username: ((slack-username))
-      icon_url: ((slack-icon-url))
 
 - name: push-pages-s3-broker-production
   serial: true
@@ -593,21 +587,17 @@ jobs:
   on_failure:
     put: slack
     params:
+      <<: *slack-channel-failure
       text: |
         :x: FAILED to deploy pages-s3-broker on production
         <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
-      channel: ((slack-channel))
-      username: ((slack-username))
-      icon_url: ((slack-icon-url))
   on_success:
     put: slack
     params:
+      <<: *slack-channel-success
       text: |
         :white_check_mark: Successfully deployed pages-s3-broker on production
         <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
-      channel: ((slack-channel))
-      username: ((slack-username))
-      icon_url: ((slack-icon-url))
 
 
 - name: acceptance-tests-production
@@ -761,12 +751,27 @@ resources:
   source:
     uri: ((s3-broker-app-url))
     branch: ((s3-broker-app-branch))
+    commit_verification_keys: ((cloud-gov-pgp-keys))
+
+- name: broker-src-dev
+  type: git
+  source:
+    uri: ((s3-broker-app-url))
+    branch: ((s3-broker-app-branch-dev))
+    commit_verification_keys: ((cloud-gov-pgp-keys))
 
 - name: broker-config
   type: git
   source:
     uri: ((s3-broker-config-url))
     branch: ((s3-broker-config-branch))
+    commit_verification_keys: ((cloud-gov-pgp-keys))
+
+- name: broker-config-dev
+  type: git
+  source:
+    uri: ((s3-broker-config-url))
+    branch: ((s3-broker-config-branch-dev))
     commit_verification_keys: ((cloud-gov-pgp-keys))
 
 - name: pipeline-tasks
