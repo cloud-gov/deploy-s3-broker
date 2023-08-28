@@ -737,7 +737,7 @@ resource_types:
      aws_secret_access_key: ((ecr_aws_secret))
      repository: git-resource
      aws_region: us-gov-west-1
-     semver_constraint: ">= 1.0.0"
+     tag: latest
 
 - name: slack-notification
   type: registry-image
@@ -746,7 +746,7 @@ resource_types:
      aws_secret_access_key: ((ecr_aws_secret))
      repository: slack-notification-resource
      aws_region: us-gov-west-1
-     semver_constraint: ">= 1.0.0"
+     tag: latest
 
 - name: s3-iam
   type: registry-image
@@ -755,7 +755,7 @@ resource_types:
      aws_secret_access_key: ((ecr_aws_secret))
      repository: s3-resource
      aws_region: us-gov-west-1
-     semver_constraint: ">= 1.0.0"
+     tag: latest
   
 - name: semver-iam
   type: docker-image
