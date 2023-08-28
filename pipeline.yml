@@ -737,8 +737,8 @@ resource_types:
     aws_secret_access_key: ((ecr_aws_secret))
     repository: registry-image-resource
     aws_region: us-gov-west-1
-    semver_constraint: ">= 1.0.0"
-    
+    tag: latest
+
 - name: git
   type: registry-image
   source:
