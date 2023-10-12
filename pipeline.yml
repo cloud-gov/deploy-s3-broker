@@ -1,6 +1,6 @@
 ---
 development-cf-creds: &development-cf-creds
-  CF_API_URL: ((development-cf-api-url))
+  CF_API_URL: ((dev-cf-api-url))
   CF_USERNAME: ((development-cf-username))
   CF_PASSWORD: ((development-cf-password))
   CF_ORGANIZATION: ((development-cf-organization))
@@ -14,7 +14,7 @@ staging-cf-creds: &staging-cf-creds
   CF_SPACE: ((staging-cf-space))
 
 production-cf-creds: &production-cf-creds
-  CF_API_URL: ((production-cf-api-url))
+  CF_API_URL: ((prod-cf-api-url))
   CF_USERNAME: ((production-cf-username))
   CF_PASSWORD: ((production-cf-password))
   CF_ORGANIZATION: ((production-cf-organization))
@@ -28,22 +28,13 @@ staging-cf-creds: &federalist-staging-cf-creds
   CF_SPACE: ((federalist-staging-cf-space))
 
 production-cf-creds: &federalist-production-cf-creds
-  CF_API_URL: ((production-cf-api-url))
+  CF_API_URL: ((prod-cf-api-url))
   CF_USERNAME: ((production-cf-username))
   CF_PASSWORD: ((production-cf-password))
   CF_ORGANIZATION: ((federalist-production-cf-organization))
   CF_SPACE: ((federalist-production-cf-space))
 
 jobs:
-- name: test-s3-broker
-  plan:
-  - in_parallel:
-    - get: broker-src
-      trigger: true
-    - get: broker-config
-      trigger: true
-  - task: test
-    file: broker-config/tasks/test.yml
 
 - name: test-s3-broker-dev
   plan:
@@ -52,7 +43,9 @@ jobs:
       trigger: true
     - get: broker-config-dev
       trigger: true
+    - get: general-task
   - task: test
+    image: general-task
     file: broker-config-dev/tasks/test-dev.yml
 
 - name: push-s3-broker-development
@@ -66,7 +59,9 @@ jobs:
       passed: [test-s3-broker-dev]
       trigger: true
     - get: pipeline-tasks
+    - get: general-task
   - task: build
+    image: general-task
     file: broker-config-dev/tasks/build-dev.yml
     params:
       AUTH_USERNAME: ((development-auth-name))
@@ -77,7 +72,7 @@ jobs:
       POLICY_PREFIX: ((development-policy-prefix))
       BUCKET_PREFIX: ((development-bucket-prefix))
       IAM_PATH: ((development-iam-path))
-      CF_API_URL: ((development-cf-api-url))
+      CF_API_URL: ((dev-cf-api-url))
       CF_CLIENT_ID: ((development-cf-client-id))
       CF_CLIENT_SECRET: ((development-cf-client-secret))
       CONFIG_FILE_NAME: base-config-template
@@ -136,10 +131,7 @@ jobs:
     - get: broker-config-dev
       passed: [push-s3-broker-development]
       trigger: true
-    - get: terraform-yaml-development
-      trigger: true
-    - get: cf-development-version
-      trigger: true
+    - get: general-task
   - in_parallel:
     - task: acceptance-tests
       file: broker-config-dev/tasks/acceptance-tests-dev.yml
@@ -163,6 +155,7 @@ jobs:
           }
     - task: acceptance-tests-public
       file: broker-config-dev/tasks/acceptance-tests-dev.yml
+      image: general-task
       params:
         <<: *development-cf-creds
         APP_NAME: s3-acceptance-test-public
@@ -173,6 +166,7 @@ jobs:
         ENCRYPTION: *encryption
     - task: acceptance-tests-public-delete
       file: broker-config-dev/tasks/acceptance-tests-dev.yml
+      image: general-task
       params:
         <<: *development-cf-creds
         APP_NAME: s3-acceptance-test-public-delete
@@ -182,6 +176,29 @@ jobs:
         IS_PUBLIC: "true"
         IS_DELETE: "true"
         ENCRYPTION: *encryption
+
+- name: set-self
+  plan:
+  - get: broker-config
+    trigger: true
+  - get: broker-src
+    trigger: true
+  - set_pipeline: self
+    file: broker-config/pipeline.yml
+
+- name: test-s3-broker
+  plan:
+  - in_parallel:
+    - get: broker-src
+      trigger: true
+      passed: [set-self]
+    - get: broker-config
+      trigger: true
+      passed: [set-self]
+    - get: general-task
+  - task: test
+    image: general-task
+    file: broker-config/tasks/test.yml
 
 - name: push-s3-broker-staging
   serial: true
@@ -194,7 +211,9 @@ jobs:
       passed: [test-s3-broker]
       trigger: true
     - get: pipeline-tasks
+    - get: general-task
   - task: build
+    image: general-task
     file: broker-config/tasks/build.yml
     params:
       AUTH_USERNAME: ((staging-auth-name))
@@ -261,7 +280,9 @@ jobs:
       passed: [test-s3-broker]
       trigger: true
     - get: pipeline-tasks
+    - get: general-task
   - task: build
+    image: general-task
     file: broker-config/tasks/build.yml
     params:
       AUTH_USERNAME: ((staging-auth-name))
@@ -320,12 +341,10 @@ jobs:
     - get: broker-config
       passed: [push-s3-broker-staging]
       trigger: true
-    - get: terraform-yaml-staging
-      trigger: true
-    - get: cf-staging-version
-      trigger: true
+    - get: general-task
   - in_parallel:
     - task: acceptance-tests
+      image: general-task
       file: broker-config/tasks/acceptance-tests.yml
       params:
         <<: *staging-cf-creds
@@ -346,6 +365,7 @@ jobs:
             ]
           }
     - task: acceptance-tests-public
+      image: general-task
       file: broker-config/tasks/acceptance-tests.yml
       params:
         <<: *staging-cf-creds
@@ -356,6 +376,7 @@ jobs:
         IS_PUBLIC: "true"
         ENCRYPTION: *encryption
     - task: acceptance-tests-public-delete
+      image: general-task
       file: broker-config/tasks/acceptance-tests.yml
       params:
         <<: *staging-cf-creds
@@ -377,12 +398,10 @@ jobs:
     - get: broker-config
       passed: [push-federalist-s3-broker-staging]
       trigger: true
-    - get: terraform-yaml-staging
-      trigger: true
-    - get: cf-staging-version
-      trigger: true
+    - get: general-task
   - in_parallel:
     - task: federalist-acceptance-tests
+      image: general-task
       file: broker-config/tasks/acceptance-tests.yml
       params:
         <<: *federalist-staging-cf-creds
@@ -403,6 +422,7 @@ jobs:
             ]
           }
     - task: federalist-acceptance-tests-public
+      image: general-task
       file: broker-config/tasks/acceptance-tests.yml
       params:
         <<: *federalist-staging-cf-creds
@@ -424,7 +444,9 @@ jobs:
       passed: [acceptance-tests-staging]
       trigger: true
     - get: pipeline-tasks
+    - get: general-task
   - task: build
+    image: general-task
     file: broker-config/tasks/build.yml
     params:
       AUTH_USERNAME: ((production-auth-name))
@@ -435,7 +457,7 @@ jobs:
       POLICY_PREFIX: ((production-policy-prefix))
       BUCKET_PREFIX: ((production-bucket-prefix))
       IAM_PATH: ((production-iam-path))
-      CF_API_URL: ((production-cf-api-url))
+      CF_API_URL: ((prod-cf-api-url))
       CF_CLIENT_ID: ((production-cf-client-id))
       CF_CLIENT_SECRET: ((production-cf-client-secret))
       CONFIG_FILE_NAME: base-config-template
@@ -490,7 +512,9 @@ jobs:
       passed: [federalist-acceptance-tests-staging]
       trigger: true
     - get: pipeline-tasks
+    - get: general-task
   - task: build
+    image: general-task
     file: broker-config/tasks/build.yml
     params:
       AUTH_USERNAME: ((production-auth-name))
@@ -502,7 +526,7 @@ jobs:
       BUCKET_PREFIX: ((federalist-production-bucket-prefix))
       INTERNAL_VPCE_ID: ((production-s3-vpce_id))
       IAM_PATH: ((federalist-production-iam-path))
-      CF_API_URL: ((production-cf-api-url))
+      CF_API_URL: ((prod-cf-api-url))
       CF_CLIENT_ID: ((production-cf-client-id))
       CF_CLIENT_SECRET: ((production-cf-client-secret))
       CONFIG_FILE_NAME: federalist-config-template
@@ -551,6 +575,7 @@ jobs:
       trigger: true
     - get: pipeline-tasks
   - task: build
+    image: general-task
     file: broker-config/tasks/build.yml
     params:
       AUTH_USERNAME: ((production-auth-name))
@@ -562,7 +587,7 @@ jobs:
       BUCKET_PREFIX: ((federalist-production-bucket-prefix))
       INTERNAL_VPCE_ID: ((production-s3-vpce_id))
       IAM_PATH: ((federalist-production-iam-path))
-      CF_API_URL: ((production-cf-api-url))
+      CF_API_URL: ((prod-cf-api-url))
       CF_CLIENT_ID: ((production-cf-client-id))
       CF_CLIENT_SECRET: ((production-cf-client-secret))
       CONFIG_FILE_NAME: pages-config-template
@@ -610,12 +635,10 @@ jobs:
     - get: broker-config
       passed: [push-s3-broker-production]
       trigger: true
-    - get: terraform-yaml-production
-      trigger: true
-    - get: cf-production-version
-      trigger: true
+    - get: general-task
   - in_parallel:
     - task: acceptance-tests
+      image: general-task
       file: broker-config/tasks/acceptance-tests.yml
       params:
         <<: *production-cf-creds
@@ -626,6 +649,7 @@ jobs:
         IS_PUBLIC: "false"
         ENCRYPTION: *encryption
     - task: acceptance-tests-public
+      image: general-task
       file: broker-config/tasks/acceptance-tests.yml
       params:
         <<: *production-cf-creds
@@ -636,6 +660,7 @@ jobs:
         IS_PUBLIC: "true"
         ENCRYPTION: *encryption
     - task: acceptance-tests-public-delete
+      image: general-task
       file: broker-config/tasks/acceptance-tests.yml
       params:
         <<: *production-cf-creds
@@ -657,12 +682,10 @@ jobs:
     - get: broker-config
       passed: [push-federalist-s3-broker-production]
       trigger: true
-    - get: terraform-yaml-production
-      trigger: true
-    - get: cf-production-version
-      trigger: true
+    - get: general-task
   - in_parallel:
     - task: acceptance-tests
+      image: general-task
       file: broker-config/tasks/acceptance-tests.yml
       params:
         <<: *federalist-production-cf-creds
@@ -673,6 +696,7 @@ jobs:
         IS_PUBLIC: "false"
         ENCRYPTION: *encryption
     - task: acceptance-tests-public
+      image: general-task
       file: broker-config/tasks/acceptance-tests.yml
       params:
         <<: *federalist-production-cf-creds
@@ -683,6 +707,7 @@ jobs:
         IS_PUBLIC: "true"
         ENCRYPTION: *encryption
     - task: acceptance-tests-vpc
+      image: general-task
       file: broker-config/tasks/acceptance-tests.yml
       params:
         <<: *federalist-production-cf-creds
@@ -703,12 +728,10 @@ jobs:
     - get: broker-config
       passed: [push-pages-s3-broker-production]
       trigger: true
-    - get: terraform-yaml-production
-      trigger: true
-    - get: cf-production-version
-      trigger: true
+    - get: general-task
   - in_parallel:
     - task: acceptance-tests
+      image: general-task
       file: broker-config/tasks/acceptance-tests.yml
       params:
         <<: *federalist-production-cf-creds
@@ -719,6 +742,7 @@ jobs:
         IS_PUBLIC: "false"
         ENCRYPTION: *encryption
     - task: acceptance-tests-vpc
+      image: general-task
       file: broker-config/tasks/acceptance-tests.yml
       params:
         <<: *federalist-production-cf-creds
@@ -788,42 +812,42 @@ resources:
 - name: broker-src
   type: git
   source:
-    uri: ((s3-broker-app-url))
-    branch: ((s3-broker-app-branch))
+    uri: https://github.com/cloud-gov/s3-broker
+    branch: main
     commit_verification_keys: ((cloud-gov-pgp-keys))
 
 - name: broker-src-dev
   type: git
   source:
-    uri: ((s3-broker-app-url))
-    branch: ((s3-broker-app-branch-dev))
+    uri: https://github.com/cloud-gov/s3-broker
+    branch: main
     commit_verification_keys: ((cloud-gov-pgp-keys))
 
 - name: broker-config
   type: git
   source:
-    uri: ((s3-broker-config-url))
-    branch: ((s3-broker-config-branch))
+    uri: https://github.com/cloud-gov/cg-deploy-s3-broker
+    branch: main
     commit_verification_keys: ((cloud-gov-pgp-keys))
 
 - name: broker-config-dev
   type: git
   source:
-    uri: ((s3-broker-config-url))
-    branch: ((s3-broker-config-branch-dev))
+    uri: https://github.com/cloud-gov/cg-deploy-s3-broker
+    branch: main
     commit_verification_keys: ((cloud-gov-pgp-keys))
 
 - name: pipeline-tasks
   type: git
   source:
-    uri: ((pipeline-tasks-git-url))
-    branch: ((pipeline-tasks-git-branch))
+    uri: https://github.com/cloud-gov/cg-pipeline-tasks
+    branch: main
     commit_verification_keys: ((cloud-gov-pgp-keys))
 
 - name: deploy-s3-broker-app-development
   type: cf
   source:
-    api: ((development-cf-api-url))
+    api: ((dev-cf-api-url))
     username: ((development-cf-username))
     password: ((development-cf-password))
     organization: ((development-cf-organization))
@@ -850,7 +874,7 @@ resources:
 - name: deploy-s3-broker-app-production
   type: cf
   source:
-    api: ((production-cf-api-url))
+    api: ((prod-cf-api-url))
     username: ((production-cf-username))
     password: ((production-cf-password))
     organization: ((production-cf-organization))
@@ -859,7 +883,7 @@ resources:
 - name: deploy-federalist-s3-broker-app-production
   type: cf
   source:
-    api: ((production-cf-api-url))
+    api: ((prod-cf-api-url))
     username: ((production-cf-username))
     password: ((production-cf-password))
     organization: ((production-cf-organization))
@@ -868,58 +892,22 @@ resources:
 - name: deploy-pages-s3-broker-app-production
   type: cf
   source:
-    api: ((production-cf-api-url))
+    api: ((prod-cf-api-url))
     username: ((production-cf-username))
     password: ((production-cf-password))
     organization: ((production-cf-organization))
     space: ((production-cf-space))
-    
-- name: cf-development-version
-  type: semver-iam
-  source:
-    bucket: ((development-semver-bucket))
-    driver: ((development-semver-driver))
-    key: ((development-semver-key))
-    region_name: ((development-semver-region))
-
-- name: cf-staging-version
-  type: semver-iam
-  source:
-    bucket: ((staging-semver-bucket))
-    driver: ((staging-semver-driver))
-    key: ((staging-semver-key))
-    region_name: ((staging-semver-region))
-
-- name: cf-production-version
-  type: semver-iam
-  source:
-    bucket: ((production-semver-bucket))
-    driver: ((production-semver-driver))
-    key: ((production-semver-key))
-    region_name: ((production-semver-region))
-
-- name: terraform-yaml-development
-  type: s3-iam
-  source:
-    bucket: ((development-terraform-bucket))
-    region_name: ((development-terraform-region))
-    versioned_file: ((development-terraform-file))
-
-- name: terraform-yaml-staging
-  type: s3-iam
-  source:
-    bucket: ((staging-terraform-bucket))
-    region_name: ((staging-terraform-region))
-    versioned_file: ((staging-terraform-file))
-
-- name: terraform-yaml-production
-  type: s3-iam
-  source:
-    bucket: ((production-terraform-bucket))
-    region_name: ((production-terraform-region))
-    versioned_file: ((production-terraform-file))
 
 - name: slack
   type: slack-notification
   source:
     url: ((slack-webhook-url))
+
+- name: general-task
+  type: registry-image
+  source:
+    aws_access_key_id: ((ecr_aws_key))
+    aws_secret_access_key: ((ecr_aws_secret))
+    repository: general-task
+    aws_region: us-gov-west-1
+    tag: latest
