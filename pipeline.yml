@@ -142,8 +142,6 @@ jobs:
     - get: broker-config-dev
       passed: [push-s3-broker-development]
       trigger: true
-    - get: cf-development-version
-      trigger: true
     - get: general-task
   - in_parallel:
     - task: acceptance-tests
@@ -331,8 +329,6 @@ jobs:
     - get: broker-config
       passed: [push-s3-broker-staging]
       trigger: true
-    - get: cf-staging-version
-      trigger: true
     - get: general-task
   - in_parallel:
     - task: acceptance-tests
@@ -389,8 +385,6 @@ jobs:
       trigger: true
     - get: broker-config
       passed: [push-federalist-s3-broker-staging]
-      trigger: true
-    - get: cf-staging-version
       trigger: true
     - get: general-task
   - in_parallel:
@@ -629,8 +623,6 @@ jobs:
     - get: broker-config
       passed: [push-s3-broker-production]
       trigger: true
-    - get: cf-production-version
-      trigger: true
     - get: general-task
   - in_parallel:
     - task: acceptance-tests
@@ -678,8 +670,6 @@ jobs:
     - get: broker-config
       passed: [push-federalist-s3-broker-production]
       trigger: true
-    - get: cf-production-version
-      trigger: true
     - get: general-task
   - in_parallel:
     - task: acceptance-tests
@@ -725,8 +715,6 @@ jobs:
       trigger: true
     - get: broker-config
       passed: [push-pages-s3-broker-production]
-      trigger: true
-    - get: cf-production-version
       trigger: true
     - get: general-task
   - in_parallel:
@@ -897,30 +885,6 @@ resources:
     password: ((production-cf-password))
     organization: ((production-cf-organization))
     space: ((production-cf-space))
-    
-- name: cf-development-version
-  type: semver-iam
-  source:
-    bucket: ((development-semver-bucket))
-    driver: ((development-semver-driver))
-    key: ((development-semver-key))
-    region_name: ((development-semver-region))
-
-- name: cf-staging-version
-  type: semver-iam
-  source:
-    bucket: ((staging-semver-bucket))
-    driver: ((staging-semver-driver))
-    key: ((staging-semver-key))
-    region_name: ((staging-semver-region))
-
-- name: cf-production-version
-  type: semver-iam
-  source:
-    bucket: ((production-semver-bucket))
-    driver: ((production-semver-driver))
-    key: ((production-semver-key))
-    region_name: ((production-semver-region))
 
 - name: slack
   type: slack-notification
