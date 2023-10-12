@@ -43,6 +43,7 @@ jobs:
     - get: broker-config
       trigger: true
   - task: test
+    image: general-task
     file: broker-config/tasks/test.yml
 
 - name: test-s3-broker-dev
@@ -53,6 +54,7 @@ jobs:
     - get: broker-config-dev
       trigger: true
   - task: test
+    image: general-task
     file: broker-config-dev/tasks/test-dev.yml
 
 - name: push-s3-broker-development
@@ -67,6 +69,7 @@ jobs:
       trigger: true
     - get: pipeline-tasks
   - task: build
+    image: general-task
     file: broker-config-dev/tasks/build-dev.yml
     params:
       AUTH_USERNAME: ((development-auth-name))
@@ -195,6 +198,7 @@ jobs:
       trigger: true
     - get: pipeline-tasks
   - task: build
+    image: general-task
     file: broker-config/tasks/build.yml
     params:
       AUTH_USERNAME: ((staging-auth-name))
@@ -262,6 +266,7 @@ jobs:
       trigger: true
     - get: pipeline-tasks
   - task: build
+    image: general-task
     file: broker-config/tasks/build.yml
     params:
       AUTH_USERNAME: ((staging-auth-name))
@@ -326,6 +331,7 @@ jobs:
       trigger: true
   - in_parallel:
     - task: acceptance-tests
+      image: general-task
       file: broker-config/tasks/acceptance-tests.yml
       params:
         <<: *staging-cf-creds
@@ -346,6 +352,7 @@ jobs:
             ]
           }
     - task: acceptance-tests-public
+      image: general-task
       file: broker-config/tasks/acceptance-tests.yml
       params:
         <<: *staging-cf-creds
@@ -356,6 +363,7 @@ jobs:
         IS_PUBLIC: "true"
         ENCRYPTION: *encryption
     - task: acceptance-tests-public-delete
+      image: general-task
       file: broker-config/tasks/acceptance-tests.yml
       params:
         <<: *staging-cf-creds
@@ -383,6 +391,7 @@ jobs:
       trigger: true
   - in_parallel:
     - task: federalist-acceptance-tests
+      image: general-task
       file: broker-config/tasks/acceptance-tests.yml
       params:
         <<: *federalist-staging-cf-creds
@@ -403,6 +412,7 @@ jobs:
             ]
           }
     - task: federalist-acceptance-tests-public
+      image: general-task
       file: broker-config/tasks/acceptance-tests.yml
       params:
         <<: *federalist-staging-cf-creds
@@ -425,6 +435,7 @@ jobs:
       trigger: true
     - get: pipeline-tasks
   - task: build
+    image: general-task
     file: broker-config/tasks/build.yml
     params:
       AUTH_USERNAME: ((production-auth-name))
@@ -491,6 +502,7 @@ jobs:
       trigger: true
     - get: pipeline-tasks
   - task: build
+    image: general-task
     file: broker-config/tasks/build.yml
     params:
       AUTH_USERNAME: ((production-auth-name))
@@ -551,6 +563,7 @@ jobs:
       trigger: true
     - get: pipeline-tasks
   - task: build
+    image: general-task
     file: broker-config/tasks/build.yml
     params:
       AUTH_USERNAME: ((production-auth-name))
@@ -616,6 +629,7 @@ jobs:
       trigger: true
   - in_parallel:
     - task: acceptance-tests
+      image: general-task
       file: broker-config/tasks/acceptance-tests.yml
       params:
         <<: *production-cf-creds
@@ -626,6 +640,7 @@ jobs:
         IS_PUBLIC: "false"
         ENCRYPTION: *encryption
     - task: acceptance-tests-public
+      image: general-task
       file: broker-config/tasks/acceptance-tests.yml
       params:
         <<: *production-cf-creds
@@ -636,6 +651,7 @@ jobs:
         IS_PUBLIC: "true"
         ENCRYPTION: *encryption
     - task: acceptance-tests-public-delete
+      image: general-task
       file: broker-config/tasks/acceptance-tests.yml
       params:
         <<: *production-cf-creds
@@ -663,6 +679,7 @@ jobs:
       trigger: true
   - in_parallel:
     - task: acceptance-tests
+      image: general-task
       file: broker-config/tasks/acceptance-tests.yml
       params:
         <<: *federalist-production-cf-creds
@@ -673,6 +690,7 @@ jobs:
         IS_PUBLIC: "false"
         ENCRYPTION: *encryption
     - task: acceptance-tests-public
+      image: general-task
       file: broker-config/tasks/acceptance-tests.yml
       params:
         <<: *federalist-production-cf-creds
@@ -683,6 +701,7 @@ jobs:
         IS_PUBLIC: "true"
         ENCRYPTION: *encryption
     - task: acceptance-tests-vpc
+      image: general-task
       file: broker-config/tasks/acceptance-tests.yml
       params:
         <<: *federalist-production-cf-creds
@@ -709,6 +728,7 @@ jobs:
       trigger: true
   - in_parallel:
     - task: acceptance-tests
+      image: general-task
       file: broker-config/tasks/acceptance-tests.yml
       params:
         <<: *federalist-production-cf-creds
@@ -719,6 +739,7 @@ jobs:
         IS_PUBLIC: "false"
         ENCRYPTION: *encryption
     - task: acceptance-tests-vpc
+      image: general-task
       file: broker-config/tasks/acceptance-tests.yml
       params:
         <<: *federalist-production-cf-creds
@@ -923,3 +944,12 @@ resources:
   type: slack-notification
   source:
     url: ((slack-webhook-url))
+
+- name: general-task
+  type: registry-image
+  source:
+    aws_access_key_id: ((ecr_aws_key))
+    aws_secret_access_key: ((ecr_aws_secret))
+    repository: general-task
+    aws_region: us-gov-west-1
+    tag: latest
