@@ -42,6 +42,7 @@ jobs:
       trigger: true
     - get: broker-config
       trigger: true
+    - get: general-task
   - task: test
     image: general-task
     file: broker-config/tasks/test.yml
@@ -53,6 +54,7 @@ jobs:
       trigger: true
     - get: broker-config-dev
       trigger: true
+    - get: general-task
   - task: test
     image: general-task
     file: broker-config-dev/tasks/test-dev.yml
@@ -68,6 +70,7 @@ jobs:
       passed: [test-s3-broker-dev]
       trigger: true
     - get: pipeline-tasks
+    - get: general-task
   - task: build
     image: general-task
     file: broker-config-dev/tasks/build-dev.yml
@@ -143,6 +146,7 @@ jobs:
       trigger: true
     - get: cf-development-version
       trigger: true
+    - get: general-task
   - in_parallel:
     - task: acceptance-tests
       file: broker-config-dev/tasks/acceptance-tests-dev.yml
@@ -166,6 +170,7 @@ jobs:
           }
     - task: acceptance-tests-public
       file: broker-config-dev/tasks/acceptance-tests-dev.yml
+      image: general-task
       params:
         <<: *development-cf-creds
         APP_NAME: s3-acceptance-test-public
@@ -176,6 +181,7 @@ jobs:
         ENCRYPTION: *encryption
     - task: acceptance-tests-public-delete
       file: broker-config-dev/tasks/acceptance-tests-dev.yml
+      image: general-task
       params:
         <<: *development-cf-creds
         APP_NAME: s3-acceptance-test-public-delete
@@ -197,6 +203,7 @@ jobs:
       passed: [test-s3-broker]
       trigger: true
     - get: pipeline-tasks
+    - get: general-task
   - task: build
     image: general-task
     file: broker-config/tasks/build.yml
@@ -265,6 +272,7 @@ jobs:
       passed: [test-s3-broker]
       trigger: true
     - get: pipeline-tasks
+    - get: general-task
   - task: build
     image: general-task
     file: broker-config/tasks/build.yml
@@ -329,6 +337,7 @@ jobs:
       trigger: true
     - get: cf-staging-version
       trigger: true
+    - get: general-task
   - in_parallel:
     - task: acceptance-tests
       image: general-task
@@ -389,6 +398,7 @@ jobs:
       trigger: true
     - get: cf-staging-version
       trigger: true
+    - get: general-task
   - in_parallel:
     - task: federalist-acceptance-tests
       image: general-task
@@ -434,6 +444,7 @@ jobs:
       passed: [acceptance-tests-staging]
       trigger: true
     - get: pipeline-tasks
+    - get: general-task
   - task: build
     image: general-task
     file: broker-config/tasks/build.yml
@@ -501,6 +512,7 @@ jobs:
       passed: [federalist-acceptance-tests-staging]
       trigger: true
     - get: pipeline-tasks
+    - get: general-task
   - task: build
     image: general-task
     file: broker-config/tasks/build.yml
@@ -627,6 +639,7 @@ jobs:
       trigger: true
     - get: cf-production-version
       trigger: true
+    - get: general-task
   - in_parallel:
     - task: acceptance-tests
       image: general-task
@@ -677,6 +690,7 @@ jobs:
       trigger: true
     - get: cf-production-version
       trigger: true
+    - get: general-task
   - in_parallel:
     - task: acceptance-tests
       image: general-task
@@ -726,6 +740,7 @@ jobs:
       trigger: true
     - get: cf-production-version
       trigger: true
+    - get: general-task
   - in_parallel:
     - task: acceptance-tests
       image: general-task
