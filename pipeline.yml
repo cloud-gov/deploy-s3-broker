@@ -35,17 +35,6 @@ production-cf-creds: &federalist-production-cf-creds
   CF_SPACE: ((federalist-production-cf-space))
 
 jobs:
-- name: test-s3-broker
-  plan:
-  - in_parallel:
-    - get: broker-src
-      trigger: true
-    - get: broker-config
-      trigger: true
-    - get: general-task
-  - task: test
-    image: general-task
-    file: broker-config/tasks/test.yml
 
 - name: test-s3-broker-dev
   plan:
@@ -187,6 +176,29 @@ jobs:
         IS_PUBLIC: "true"
         IS_DELETE: "true"
         ENCRYPTION: *encryption
+
+- name: set-self
+  plan:
+  - get: broker-config
+    trigger: true
+  - get: broker-src
+    trigger: true
+  - set_pipeline: self
+    file: broker-config/pipeline.yml
+
+- name: test-s3-broker
+  plan:
+  - in_parallel:
+    - get: broker-src
+      trigger: true
+      passed: [set-self]
+    - get: broker-config
+      trigger: true
+      passed: [set-self]
+    - get: general-task
+  - task: test
+    image: general-task
+    file: broker-config/tasks/test.yml
 
 - name: push-s3-broker-staging
   serial: true
