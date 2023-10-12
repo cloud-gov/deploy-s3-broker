@@ -1,6 +1,6 @@
 ---
 development-cf-creds: &development-cf-creds
-  CF_API_URL: ((development-cf-api-url))
+  CF_API_URL: ((dev-cf-api-url))
   CF_USERNAME: ((development-cf-username))
   CF_PASSWORD: ((development-cf-password))
   CF_ORGANIZATION: ((development-cf-organization))
@@ -14,7 +14,7 @@ staging-cf-creds: &staging-cf-creds
   CF_SPACE: ((staging-cf-space))
 
 production-cf-creds: &production-cf-creds
-  CF_API_URL: ((production-cf-api-url))
+  CF_API_URL: ((prod-cf-api-url))
   CF_USERNAME: ((production-cf-username))
   CF_PASSWORD: ((production-cf-password))
   CF_ORGANIZATION: ((production-cf-organization))
@@ -28,7 +28,7 @@ staging-cf-creds: &federalist-staging-cf-creds
   CF_SPACE: ((federalist-staging-cf-space))
 
 production-cf-creds: &federalist-production-cf-creds
-  CF_API_URL: ((production-cf-api-url))
+  CF_API_URL: ((prod-cf-api-url))
   CF_USERNAME: ((production-cf-username))
   CF_PASSWORD: ((production-cf-password))
   CF_ORGANIZATION: ((federalist-production-cf-organization))
@@ -83,7 +83,7 @@ jobs:
       POLICY_PREFIX: ((development-policy-prefix))
       BUCKET_PREFIX: ((development-bucket-prefix))
       IAM_PATH: ((development-iam-path))
-      CF_API_URL: ((development-cf-api-url))
+      CF_API_URL: ((dev-cf-api-url))
       CF_CLIENT_ID: ((development-cf-client-id))
       CF_CLIENT_SECRET: ((development-cf-client-secret))
       CONFIG_FILE_NAME: base-config-template
@@ -141,8 +141,6 @@ jobs:
       trigger: true
     - get: broker-config-dev
       passed: [push-s3-broker-development]
-      trigger: true
-    - get: terraform-yaml-development
       trigger: true
     - get: cf-development-version
       trigger: true
@@ -333,8 +331,6 @@ jobs:
     - get: broker-config
       passed: [push-s3-broker-staging]
       trigger: true
-    - get: terraform-yaml-staging
-      trigger: true
     - get: cf-staging-version
       trigger: true
     - get: general-task
@@ -393,8 +389,6 @@ jobs:
       trigger: true
     - get: broker-config
       passed: [push-federalist-s3-broker-staging]
-      trigger: true
-    - get: terraform-yaml-staging
       trigger: true
     - get: cf-staging-version
       trigger: true
@@ -457,7 +451,7 @@ jobs:
       POLICY_PREFIX: ((production-policy-prefix))
       BUCKET_PREFIX: ((production-bucket-prefix))
       IAM_PATH: ((production-iam-path))
-      CF_API_URL: ((production-cf-api-url))
+      CF_API_URL: ((prod-cf-api-url))
       CF_CLIENT_ID: ((production-cf-client-id))
       CF_CLIENT_SECRET: ((production-cf-client-secret))
       CONFIG_FILE_NAME: base-config-template
@@ -526,7 +520,7 @@ jobs:
       BUCKET_PREFIX: ((federalist-production-bucket-prefix))
       INTERNAL_VPCE_ID: ((production-s3-vpce_id))
       IAM_PATH: ((federalist-production-iam-path))
-      CF_API_URL: ((production-cf-api-url))
+      CF_API_URL: ((prod-cf-api-url))
       CF_CLIENT_ID: ((production-cf-client-id))
       CF_CLIENT_SECRET: ((production-cf-client-secret))
       CONFIG_FILE_NAME: federalist-config-template
@@ -587,7 +581,7 @@ jobs:
       BUCKET_PREFIX: ((federalist-production-bucket-prefix))
       INTERNAL_VPCE_ID: ((production-s3-vpce_id))
       IAM_PATH: ((federalist-production-iam-path))
-      CF_API_URL: ((production-cf-api-url))
+      CF_API_URL: ((prod-cf-api-url))
       CF_CLIENT_ID: ((production-cf-client-id))
       CF_CLIENT_SECRET: ((production-cf-client-secret))
       CONFIG_FILE_NAME: pages-config-template
@@ -634,8 +628,6 @@ jobs:
       trigger: true
     - get: broker-config
       passed: [push-s3-broker-production]
-      trigger: true
-    - get: terraform-yaml-production
       trigger: true
     - get: cf-production-version
       trigger: true
@@ -686,8 +678,6 @@ jobs:
     - get: broker-config
       passed: [push-federalist-s3-broker-production]
       trigger: true
-    - get: terraform-yaml-production
-      trigger: true
     - get: cf-production-version
       trigger: true
     - get: general-task
@@ -735,8 +725,6 @@ jobs:
       trigger: true
     - get: broker-config
       passed: [push-pages-s3-broker-production]
-      trigger: true
-    - get: terraform-yaml-production
       trigger: true
     - get: cf-production-version
       trigger: true
@@ -824,42 +812,42 @@ resources:
 - name: broker-src
   type: git
   source:
-    uri: ((s3-broker-app-url))
-    branch: ((s3-broker-app-branch))
+    uri: https://github.com/cloud-gov/s3-broker
+    branch: main
     commit_verification_keys: ((cloud-gov-pgp-keys))
 
 - name: broker-src-dev
   type: git
   source:
-    uri: ((s3-broker-app-url))
-    branch: ((s3-broker-app-branch-dev))
+    uri: https://github.com/cloud-gov/s3-broker
+    branch: main
     commit_verification_keys: ((cloud-gov-pgp-keys))
 
 - name: broker-config
   type: git
   source:
-    uri: ((s3-broker-config-url))
-    branch: ((s3-broker-config-branch))
+    uri: https://github.com/cloud-gov/cg-deploy-s3-broker
+    branch: main
     commit_verification_keys: ((cloud-gov-pgp-keys))
 
 - name: broker-config-dev
   type: git
   source:
-    uri: ((s3-broker-config-url))
-    branch: ((s3-broker-config-branch-dev))
+    uri: https://github.com/cloud-gov/cg-deploy-s3-broker
+    branch: main
     commit_verification_keys: ((cloud-gov-pgp-keys))
 
 - name: pipeline-tasks
   type: git
   source:
-    uri: ((pipeline-tasks-git-url))
-    branch: ((pipeline-tasks-git-branch))
+    uri: https://github.com/cloud-gov/cg-pipeline-tasks
+    branch: main
     commit_verification_keys: ((cloud-gov-pgp-keys))
 
 - name: deploy-s3-broker-app-development
   type: cf
   source:
-    api: ((development-cf-api-url))
+    api: ((dev-cf-api-url))
     username: ((development-cf-username))
     password: ((development-cf-password))
     organization: ((development-cf-organization))
@@ -886,7 +874,7 @@ resources:
 - name: deploy-s3-broker-app-production
   type: cf
   source:
-    api: ((production-cf-api-url))
+    api: ((prod-cf-api-url))
     username: ((production-cf-username))
     password: ((production-cf-password))
     organization: ((production-cf-organization))
@@ -895,7 +883,7 @@ resources:
 - name: deploy-federalist-s3-broker-app-production
   type: cf
   source:
-    api: ((production-cf-api-url))
+    api: ((prod-cf-api-url))
     username: ((production-cf-username))
     password: ((production-cf-password))
     organization: ((production-cf-organization))
@@ -904,7 +892,7 @@ resources:
 - name: deploy-pages-s3-broker-app-production
   type: cf
   source:
-    api: ((production-cf-api-url))
+    api: ((prod-cf-api-url))
     username: ((production-cf-username))
     password: ((production-cf-password))
     organization: ((production-cf-organization))
@@ -933,27 +921,6 @@ resources:
     driver: ((production-semver-driver))
     key: ((production-semver-key))
     region_name: ((production-semver-region))
-
-- name: terraform-yaml-development
-  type: s3-iam
-  source:
-    bucket: ((development-terraform-bucket))
-    region_name: ((development-terraform-region))
-    versioned_file: ((development-terraform-file))
-
-- name: terraform-yaml-staging
-  type: s3-iam
-  source:
-    bucket: ((staging-terraform-bucket))
-    region_name: ((staging-terraform-region))
-    versioned_file: ((staging-terraform-file))
-
-- name: terraform-yaml-production
-  type: s3-iam
-  source:
-    bucket: ((production-terraform-bucket))
-    region_name: ((production-terraform-region))
-    versioned_file: ((production-terraform-file))
 
 - name: slack
   type: slack-notification
