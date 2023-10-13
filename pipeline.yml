@@ -135,6 +135,7 @@ jobs:
   - in_parallel:
     - task: acceptance-tests
       file: broker-config-dev/tasks/acceptance-tests-dev.yml
+      image: general-task
       params:
         <<: *development-cf-creds
         APP_NAME: s3-acceptance-test
@@ -574,6 +575,7 @@ jobs:
       passed: [federalist-acceptance-tests-staging]
       trigger: true
     - get: pipeline-tasks
+    - get: general-task
   - task: build
     image: general-task
     file: broker-config/tasks/build.yml
