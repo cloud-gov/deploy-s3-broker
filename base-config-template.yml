@@ -1,4 +1,4 @@
-log_level: DEBUG
+log_level: INFO
 username: username
 password: password
 s3_config:
