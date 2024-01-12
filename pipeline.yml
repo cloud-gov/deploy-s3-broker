@@ -828,7 +828,7 @@ resources:
   type: git
   source:
     uri: https://github.com/cloud-gov/s3-broker
-    branch: add-tags-iam-resources
+    branch: main
     commit_verification_keys: ((cloud-gov-pgp-keys))
 
 - name: broker-config
@@ -842,7 +842,7 @@ resources:
   type: git
   source:
     uri: https://github.com/cloud-gov/cg-deploy-s3-broker
-    branch: update-deployment
+    branch: main
     commit_verification_keys: ((cloud-gov-pgp-keys))
 
 - name: pipeline-tasks
