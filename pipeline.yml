@@ -76,6 +76,7 @@ jobs:
       CF_CLIENT_ID: ((development-cf-client-id))
       CF_CLIENT_SECRET: ((development-cf-client-secret))
       CONFIG_FILE_NAME: base-config-template
+      ENVIRONMENT: ((development-environment))
   - put: deploy-s3-broker-app-development
     params:
       path: broker-src-built
@@ -229,6 +230,7 @@ jobs:
       CF_CLIENT_ID: ((staging-cf-client-id))
       CF_CLIENT_SECRET: ((staging-cf-client-secret))
       CONFIG_FILE_NAME: base-config-template
+      ENVIRONMENT: ((staging-environment))
   - put: deploy-s3-broker-app-staging
     params:
       path: broker-src-built
@@ -299,6 +301,7 @@ jobs:
       CF_CLIENT_ID: ((staging-cf-client-id))
       CF_CLIENT_SECRET: ((staging-cf-client-secret))
       CONFIG_FILE_NAME: federalist-config-template
+      ENVIRONMENT: ((staging-environment))
   - put: deploy-federalist-s3-broker-app-staging
     params:
       path: broker-src-built
@@ -462,6 +465,7 @@ jobs:
       CF_CLIENT_ID: ((production-cf-client-id))
       CF_CLIENT_SECRET: ((production-cf-client-secret))
       CONFIG_FILE_NAME: base-config-template
+      ENVIRONMENT: ((production-environment))
   - put: deploy-s3-broker-app-production
     params:
       path: broker-src-built
@@ -531,6 +535,7 @@ jobs:
       CF_CLIENT_ID: ((production-cf-client-id))
       CF_CLIENT_SECRET: ((production-cf-client-secret))
       CONFIG_FILE_NAME: federalist-config-template
+      ENVIRONMENT: ((production-environment))
   - put: deploy-federalist-s3-broker-app-production
     params:
       path: broker-src-built
@@ -593,6 +598,7 @@ jobs:
       CF_CLIENT_ID: ((production-cf-client-id))
       CF_CLIENT_SECRET: ((production-cf-client-secret))
       CONFIG_FILE_NAME: pages-config-template
+      ENVIRONMENT: ((production-environment))
   - put: deploy-pages-s3-broker-app-production
     params:
       path: broker-src-built

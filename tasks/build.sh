@@ -6,6 +6,7 @@ set -u
 cat << EOF > credentials.yml
 username: "${AUTH_USERNAME}"
 password: "${AUTH_PASSWORD}"
+environment: "${ENVIRONMENT}"
 s3_config:
   region: "${AWS_REGION}"
   aws_partition: "${AWS_PARTITION}"
