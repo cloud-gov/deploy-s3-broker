@@ -76,6 +76,7 @@ jobs:
       CF_CLIENT_ID: ((development-cf-client-id))
       CF_CLIENT_SECRET: ((development-cf-client-secret))
       CONFIG_FILE_NAME: base-config-template
+      ENVIRONMENT: ((development-environment))
   - put: deploy-s3-broker-app-development
     params:
       path: broker-src-built
@@ -85,7 +86,6 @@ jobs:
         AWS_REGION: ((development-aws-region))
         AWS_ACCESS_KEY: ((development-aws-access-key-id))
         AWS_SECRET_ACCESS_KEY: ((development-aws-secret-access-key))
-        ENVIRONMENT: ((development-environment))
   - task: update-broker
     file: pipeline-tasks/register-service-broker.yml
     params:
@@ -828,7 +828,7 @@ resources:
   type: git
   source:
     uri: https://github.com/cloud-gov/s3-broker
-    branch: main
+    branch: add-tags-iam-resources
     commit_verification_keys: ((cloud-gov-pgp-keys))
 
 - name: broker-config
@@ -842,7 +842,7 @@ resources:
   type: git
   source:
     uri: https://github.com/cloud-gov/cg-deploy-s3-broker
-    branch: main
+    branch: update-deployment
     commit_verification_keys: ((cloud-gov-pgp-keys))
 
 - name: pipeline-tasks
