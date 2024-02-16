@@ -31,7 +31,7 @@ applications:
   buildpack: go_buildpack
   command: s3-broker --config ./config.yml --port \$PORT
 env:
-  GOPACKAGENAME: github.com/cloudfoundry-community/s3-broker
+  GOPACKAGENAME: github.com/cloud-gov/s3-broker
 EOF
 
 # if a the config-template has the variable $INTERNAL_VPCE_ID
