@@ -87,7 +87,7 @@ jobs:
         AWS_ACCESS_KEY: ((development-aws-access-key-id))
         AWS_SECRET_ACCESS_KEY: ((development-aws-secret-access-key))
   - task: update-broker
-    file: pipeline-tasks/register-service-broker.yml
+    file: pipeline-tasks/register-service-broker-and-set-plan-visibility.yml
     params:
       <<: *development-cf-creds
       BROKER_NAME: s3-broker
@@ -241,7 +241,7 @@ jobs:
         AWS_ACCESS_KEY: ((staging-aws-access-key-id))
         AWS_SECRET_ACCESS_KEY: ((staging-aws-secret-access-key))
   - task: update-broker
-    file: pipeline-tasks/register-service-broker.yml
+    file: pipeline-tasks/register-service-broker-and-set-plan-visibility.yml
     params:
       <<: *staging-cf-creds
       BROKER_NAME: s3-broker
@@ -312,7 +312,7 @@ jobs:
         AWS_ACCESS_KEY: ((federalist-staging-aws-access-key-id))
         AWS_SECRET_ACCESS_KEY: ((federalist-staging-aws-secret-access-key))
   - task: update-broker
-    file: pipeline-tasks/register-service-broker.yml
+    file: pipeline-tasks/register-service-broker-and-set-plan-visibility.yml
     params:
       <<: *staging-cf-creds
       BROKER_NAME: federalist-s3-broker
@@ -476,7 +476,7 @@ jobs:
         AWS_ACCESS_KEY: ((production-aws-access-key-id))
         AWS_SECRET_ACCESS_KEY: ((production-aws-secret-access-key))
   - task: update-broker
-    file: pipeline-tasks/register-service-broker.yml
+    file: pipeline-tasks/register-service-broker-and-set-plan-visibility.yml
     params:
       <<: *production-cf-creds
       BROKER_NAME: s3-broker
@@ -546,7 +546,7 @@ jobs:
         AWS_ACCESS_KEY: ((federalist-production-aws-access-key-id))
         AWS_SECRET_ACCESS_KEY: ((federalist-production-aws-secret-access-key))
   - task: update-broker
-    file: pipeline-tasks/register-service-broker.yml
+    file: pipeline-tasks/register-service-broker-and-set-plan-visibility.yml
     params:
       <<: *production-cf-creds
       BROKER_NAME: federalist-s3-broker
@@ -609,7 +609,7 @@ jobs:
         AWS_ACCESS_KEY: ((federalist-production-aws-access-key-id))
         AWS_SECRET_ACCESS_KEY: ((federalist-production-aws-secret-access-key))
   - task: update-broker
-    file: pipeline-tasks/register-service-broker.yml
+    file: pipeline-tasks/register-service-broker-and-set-plan-visibility.yml
     params:
       <<: *production-cf-creds
       BROKER_NAME: pages-s3-broker
@@ -725,7 +725,7 @@ jobs:
         SERVICE_INSTANCE_NAME: federalist-s3-acceptance-test-vpc
         IS_PUBLIC: "true"
         ENCRYPTION: *encryption
-        
+
 - name: pages-acceptance-tests-production
   serial: true
   plan:
@@ -806,7 +806,7 @@ resource_types:
     repository: s3-resource
     aws_region: us-gov-west-1
     tag: latest
-  
+
 - name: semver-iam
   type: registry-image
   source:
