@@ -86,6 +86,7 @@ jobs:
         AWS_REGION: ((development-aws-region))
         AWS_ACCESS_KEY: ((development-aws-access-key-id))
         AWS_SECRET_ACCESS_KEY: ((development-aws-secret-access-key))
+        AWS_USE_FIPS_ENDPOINT: true
   - task: update-broker
     file: pipeline-tasks/register-service-broker-and-set-plan-visibility.yml
     params:
@@ -240,6 +241,7 @@ jobs:
         AWS_REGION: ((staging-aws-region))
         AWS_ACCESS_KEY: ((staging-aws-access-key-id))
         AWS_SECRET_ACCESS_KEY: ((staging-aws-secret-access-key))
+        AWS_USE_FIPS_ENDPOINT: true
   - task: update-broker
     file: pipeline-tasks/register-service-broker-and-set-plan-visibility.yml
     params:
@@ -311,6 +313,7 @@ jobs:
         AWS_REGION: ((staging-aws-region))
         AWS_ACCESS_KEY: ((federalist-staging-aws-access-key-id))
         AWS_SECRET_ACCESS_KEY: ((federalist-staging-aws-secret-access-key))
+        AWS_USE_FIPS_ENDPOINT: true
   - task: update-broker
     file: pipeline-tasks/register-service-broker-and-set-plan-visibility.yml
     params:
@@ -475,6 +478,7 @@ jobs:
         AWS_REGION: ((production-aws-region))
         AWS_ACCESS_KEY: ((production-aws-access-key-id))
         AWS_SECRET_ACCESS_KEY: ((production-aws-secret-access-key))
+        AWS_USE_FIPS_ENDPOINT: true
   - task: update-broker
     file: pipeline-tasks/register-service-broker-and-set-plan-visibility.yml
     params:
@@ -545,6 +549,7 @@ jobs:
         AWS_REGION: ((federalist-production-aws-region))
         AWS_ACCESS_KEY: ((federalist-production-aws-access-key-id))
         AWS_SECRET_ACCESS_KEY: ((federalist-production-aws-secret-access-key))
+        AWS_USE_FIPS_ENDPOINT: true
   - task: update-broker
     file: pipeline-tasks/register-service-broker-and-set-plan-visibility.yml
     params:
@@ -608,6 +613,7 @@ jobs:
         AWS_REGION: ((federalist-production-aws-region))
         AWS_ACCESS_KEY: ((federalist-production-aws-access-key-id))
         AWS_SECRET_ACCESS_KEY: ((federalist-production-aws-secret-access-key))
+        AWS_USE_FIPS_ENDPOINT: true
   - task: update-broker
     file: pipeline-tasks/register-service-broker-and-set-plan-visibility.yml
     params:
