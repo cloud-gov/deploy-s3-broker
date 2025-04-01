@@ -113,15 +113,6 @@ jobs:
       channel: ((slack-channel-failure))
       username: ((slack-username))
       icon_url: ((slack-icon-url))
-  on_success:
-    put: slack
-    params: &slack-channel-success
-      text: |
-        :white_check_mark: Successfully deployed s3-broker on development
-        <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
-      channel: ((slack-channel-success))
-      username: ((slack-username))
-      icon_url: ((slack-icon-url))
 
 - name: acceptance-tests-development
   serial: true
@@ -266,13 +257,6 @@ jobs:
       text: |
         :x: FAILED to deploy s3-broker on staging
         <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
-  on_success:
-    put: slack
-    params:
-      <<: *slack-channel-success
-      text: |
-        :white_check_mark: Successfully deployed s3-broker on staging
-        <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
 
 - name: push-federalist-s3-broker-staging
   serial: true
@@ -329,13 +313,6 @@ jobs:
       <<: *slack-channel-failure
       text: |
         :x: FAILED to deploy federalist-s3-broker on staging
-        <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
-  on_success:
-    put: slack
-    params:
-      <<: *slack-channel-success
-      text: |
-        :white_check_mark: Successfully deployed federalist-s3-broker on staging
         <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
 
 - name: acceptance-tests-staging
@@ -502,13 +479,6 @@ jobs:
       text: |
         :x: FAILED to deploy s3-broker on production
         <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
-  on_success:
-    put: slack
-    params:
-      <<: *slack-channel-success
-      text: |
-        :white_check_mark: Successfully deployed s3-broker on production
-        <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
 
 - name: push-federalist-s3-broker-production
   serial: true
@@ -566,13 +536,6 @@ jobs:
       text: |
         :x: FAILED to deploy federalist-s3-broker on production
         <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
-  on_success:
-    put: slack
-    params:
-      <<: *slack-channel-success
-      text: |
-        :white_check_mark: Successfully deployed federalist-s3-broker on production
-        <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
 
 - name: push-pages-s3-broker-production
   serial: true
@@ -629,13 +592,6 @@ jobs:
       <<: *slack-channel-failure
       text: |
         :x: FAILED to deploy pages-s3-broker on production
-        <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
-  on_success:
-    put: slack
-    params:
-      <<: *slack-channel-success
-      text: |
-        :white_check_mark: Successfully deployed pages-s3-broker on production
         <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
 
 
