@@ -87,7 +87,7 @@ jobs:
         AWS_ACCESS_KEY: ((development-aws-access-key-id))
         AWS_SECRET_ACCESS_KEY: ((development-aws-secret-access-key))
         AWS_USE_FIPS_ENDPOINT: "true"
-  - task: update-broker
+  - task: update-broker-sandbox-only-plans
     file: pipeline-tasks/register-service-broker-only-sandboxes.yml
     params:
       <<: *development-cf-creds
@@ -95,7 +95,7 @@ jobs:
       AUTH_USER: ((development-auth-name))
       AUTH_PASS: ((development-auth-pass))
       SERVICES: s3:basic-sandbox s3:basic-public-sandbox
-  - task: update-broker-sandbox
+  - task: update-broker-non-sandbox-plans
     file: pipeline-tasks/register-service-broker-exclude-sandboxes.yml
     params:
       <<: *development-cf-creds
@@ -233,7 +233,7 @@ jobs:
         AWS_ACCESS_KEY: ((staging-aws-access-key-id))
         AWS_SECRET_ACCESS_KEY: ((staging-aws-secret-access-key))
         AWS_USE_FIPS_ENDPOINT: "true"
-  - task: update-broker
+  - task: update-broker-sandbox-only-plans
     file: pipeline-tasks/register-service-broker-only-sandboxes.yml
     params:
       <<: *staging-cf-creds
@@ -241,7 +241,7 @@ jobs:
       AUTH_USER: ((staging-auth-name))
       AUTH_PASS: ((staging-auth-pass))
       SERVICES: s3:basic-sandbox s3:basic-public-sandbox
-  - task: update-broker-sandbox
+  - task: update-broker-non-sandbox-plans
     file: pipeline-tasks/register-service-broker-exclude-sandboxes.yml
     params:
       <<: *staging-cf-creds
@@ -456,7 +456,7 @@ jobs:
         AWS_ACCESS_KEY: ((production-aws-access-key-id))
         AWS_SECRET_ACCESS_KEY: ((production-aws-secret-access-key))
         AWS_USE_FIPS_ENDPOINT: "true"
-  - task: update-broker
+  - task: update-broker-sandbox-only-plans
     file: pipeline-tasks/register-service-broker-only-sandboxes.yml
     params:
       <<: *production-cf-creds
@@ -464,7 +464,7 @@ jobs:
       AUTH_USER: ((production-auth-name))
       AUTH_PASS: ((production-auth-pass))
       SERVICES: s3:basic-sandbox s3:basic-public-sandbox
-  - task: update-broker-sandbox
+  - task: update-broker-non-sandbox-plans
     file: pipeline-tasks/register-service-broker-exclude-sandboxes.yml
     params:
       <<: *production-cf-creds
