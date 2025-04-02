@@ -790,7 +790,7 @@ resources:
   type: git
   source:
     uri: https://github.com/cloud-gov/s3-broker
-    branch: main
+    branch: disable-sandbox-plans
     commit_verification_keys: ((cloud-gov-pgp-keys))
 
 - name: broker-config
