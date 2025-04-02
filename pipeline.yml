@@ -58,6 +58,8 @@ jobs:
     - get: broker-config-dev
       passed: [test-s3-broker-dev]
       trigger: true
+    - get: terraform-yaml-development
+      trigger: true      
     - get: pipeline-tasks
     - get: general-task
   - task: build
@@ -881,3 +883,10 @@ resources:
     repository: general-task
     aws_region: us-gov-west-1
     tag: latest
+
+- name: terraform-yaml-development
+  type: s3-iam
+  source:
+    bucket: ((tf-state-bucket))
+    region_name: ((aws-region))
+    versioned_file: ((tf-state-file-development))
