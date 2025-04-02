@@ -234,13 +234,13 @@ jobs:
         AWS_SECRET_ACCESS_KEY: ((staging-aws-secret-access-key))
         AWS_USE_FIPS_ENDPOINT: "true"
   - task: update-broker-sandbox-only-plans
-    file: pipeline-tasks/register-service-broker-only-sandboxes.yml
+    file: pipeline-tasks/register-service-broker-and-set-plan-visibility.yml
     params:
       <<: *staging-cf-creds
       BROKER_NAME: s3-broker
       AUTH_USER: ((staging-auth-name))
       AUTH_PASS: ((staging-auth-pass))
-      SERVICES: s3:basic-sandbox s3:basic-public-sandbox
+      SERVICES: s3
   - task: update-broker-non-sandbox-plans
     file: pipeline-tasks/register-service-broker-exclude-sandboxes.yml
     params:
@@ -457,13 +457,13 @@ jobs:
         AWS_SECRET_ACCESS_KEY: ((production-aws-secret-access-key))
         AWS_USE_FIPS_ENDPOINT: "true"
   - task: update-broker-sandbox-only-plans
-    file: pipeline-tasks/register-service-broker-only-sandboxes.yml
+    file: pipeline-tasks/register-service-broker-and-set-plan-visibility.yml
     params:
       <<: *production-cf-creds
       BROKER_NAME: s3-broker
       AUTH_USER: ((production-auth-name))
       AUTH_PASS: ((production-auth-pass))
-      SERVICES: s3:basic-sandbox s3:basic-public-sandbox
+      SERVICES: s3
   - task: update-broker-non-sandbox-plans
     file: pipeline-tasks/register-service-broker-exclude-sandboxes.yml
     params:
