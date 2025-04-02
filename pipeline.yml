@@ -233,7 +233,7 @@ jobs:
         AWS_ACCESS_KEY: ((staging-aws-access-key-id))
         AWS_SECRET_ACCESS_KEY: ((staging-aws-secret-access-key))
         AWS_USE_FIPS_ENDPOINT: "true"
-  - task: update-broke
+  - task: update-broker
     file: pipeline-tasks/register-service-broker-and-set-plan-visibility.yml
     params:
       <<: *staging-cf-creds
