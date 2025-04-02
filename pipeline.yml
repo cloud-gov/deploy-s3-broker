@@ -242,7 +242,7 @@ jobs:
       AUTH_PASS: ((staging-auth-pass))
       SERVICES: s3
   - task: update-broker-non-sandbox-plans
-    file: pipeline-tasks/register-service-broker-exclude-sandboxes.yml
+    file: pipeline-tasks/register-service-broker-sandboxes.yml
     params:
       <<: *staging-cf-creds
       BROKER_NAME: s3-broker
@@ -465,7 +465,7 @@ jobs:
       AUTH_PASS: ((production-auth-pass))
       SERVICES: s3
   - task: update-broker-non-sandbox-plans
-    file: pipeline-tasks/register-service-broker-exclude-sandboxes.yml
+    file: pipeline-tasks/register-service-broker-sandboxes.yml
     params:
       <<: *production-cf-creds
       BROKER_NAME: s3-broker
