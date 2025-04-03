@@ -133,8 +133,10 @@ jobs:
           - get: general-task
       - in_parallel:
           - task: acceptance-tests
-            file: broker-config-dev/tasks/acceptance-tests-dev.yml
+            file: broker-config-dev/tasks/acceptance-tests.yml
             image: general-task
+            input_mapping:
+              broker-src: broker-src-dev
             params:
               <<: *development-cf-creds
               APP_NAME: s3-acceptance-test
