@@ -65,6 +65,14 @@ jobs:
   - task: build
     image: general-task
     file: broker-config-dev/tasks/build-dev.yml
+    inputs:
+      - name: broker-src-dev
+      - name: broker-config-dev
+      - name: terraform-yaml-development    
+    outputs:
+      - name: broker-src-built
+    run:
+      path: broker-config-dev/tasks/build-dev.sh
     params:
       AUTH_USERNAME: ((development-auth-name))
       AUTH_PASSWORD: ((development-auth-pass))
@@ -79,6 +87,7 @@ jobs:
       CF_CLIENT_SECRET: ((development-cf-client-secret))
       CONFIG_FILE_NAME: base-config-template
       ENVIRONMENT: ((development-environment))
+      TF_RESOURCE_NAME: terraform-yaml-development
   - put: deploy-s3-broker-app-development
     params:
       path: broker-src-built
@@ -888,3 +897,17 @@ resources:
     bucket: ((tf-state-bucket))
     region_name: ((aws-region))
     versioned_file: ((tf-state-file-development))
+
+- name: terraform-yaml-staging
+  type: s3-iam
+  source:
+    bucket: ((tf-state-bucket))
+    region_name: ((aws-region))
+    versioned_file: ((tf-state-file-staging))    
+
+- name: terraform-yaml-production
+  type: s3-iam
+  source:
+    bucket: ((tf-state-bucket))
+    region_name: ((aws-region))
+    versioned_file: ((tf-state-file-staging))        

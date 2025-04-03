@@ -22,8 +22,8 @@ EOF
 
 cp -r broker-src-dev/. broker-src-built
 
-ACCESS_KEY_ID=$(grep 's3_broker_user_access_key_id_curr' terraform-yaml-development/state.yml | awk '{print $2}')
-SECRET_ACCESS_KEY=$(grep 's3_broker_user_secret_access_key_curr' terraform-yaml-development/state.yml | awk '{print $2}')
+ACCESS_KEY_ID=$(grep 's3_broker_user_access_key_id_curr' "$TF_RESOURCE_NAME/state.yml" | awk '{print $2}')
+SECRET_ACCESS_KEY=$(grep 's3_broker_user_secret_access_key_curr' "$TF_RESOURCE_NAME/state.yml" | awk '{print $2}')
 
 # Override upstream example manifest
 cat << EOF > broker-src-built/manifest.yml
