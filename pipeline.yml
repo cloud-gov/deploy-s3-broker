@@ -82,7 +82,6 @@ jobs:
           CF_CLIENT_SECRET: ((development-cf-client-secret))
           CONFIG_FILE_NAME: base-config-template
           ENVIRONMENT: ((development-environment))
-          TF_RESOURCE_NAME: terraform-yaml-development
       - put: deploy-s3-broker-app-development
         params:
           path: broker-src-built
@@ -211,11 +210,17 @@ jobs:
           - get: broker-config
             passed: [test-s3-broker]
             trigger: true
+          - get: terraform-yaml-staging
+            trigger: true
           - get: pipeline-tasks
           - get: general-task
       - task: build
         image: general-task
         file: broker-config/tasks/build.yml
+        input_mapping:
+          broker-src: broker-src
+          broker-config: broker-config
+          terraform-yaml: terraform-yaml-staging
         params:
           AUTH_USERNAME: ((staging-auth-name))
           AUTH_PASSWORD: ((staging-auth-pass))
@@ -437,9 +442,15 @@ jobs:
             trigger: true
           - get: pipeline-tasks
           - get: general-task
+          - get: terraform-yaml-production
+            trigger: true
       - task: build
         image: general-task
         file: broker-config/tasks/build.yml
+        input_mapping:
+          broker-src: broker-src
+          broker-config: broker-config
+          terraform-yaml: terraform-yaml-production
         params:
           AUTH_USERNAME: ((production-auth-name))
           AUTH_PASSWORD: ((production-auth-pass))
@@ -897,16 +908,16 @@ resources:
       region_name: ((aws-region))
       versioned_file: ((tf-state-file-development))
 
-  # - name: terraform-yaml-staging
-  #   type: s3-iam
-  #   source:
-  #     bucket: ((tf-state-bucket))
-  #     region_name: ((aws-region))
-  #     versioned_file: ((tf-state-file-staging))
+  - name: terraform-yaml-staging
+    type: s3-iam
+    source:
+      bucket: ((tf-state-bucket))
+      region_name: ((aws-region))
+      versioned_file: ((tf-state-file-staging))
 
-  # - name: terraform-yaml-production
-  #   type: s3-iam
-  #   source:
-  #     bucket: ((tf-state-bucket))
-  #     region_name: ((aws-region))
-  #     versioned_file: ((tf-state-file-production))
+  - name: terraform-yaml-production
+    type: s3-iam
+    source:
+      bucket: ((tf-state-bucket))
+      region_name: ((aws-region))
+      versioned_file: ((tf-state-file-production))
