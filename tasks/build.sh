@@ -40,8 +40,8 @@ applications:
   command: s3-broker --config ./config.yml --port \$PORT
 env:
   GOPACKAGENAME: github.com/cloud-gov/s3-broker
-  AWS_ACCESS_KEY: ((access-key-id))
-  AWS_SECRET_ACCESS_KEY: ((secret-access-key))  
+  AWS_ACCESS_KEY: ((access_key_id))
+  AWS_SECRET_ACCESS_KEY: ((secret_access_key))  
 EOF
 
 # if a the config-template has the variable $INTERNAL_VPCE_ID
