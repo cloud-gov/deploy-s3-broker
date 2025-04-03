@@ -20,14 +20,14 @@ production-cf-creds: &production-cf-creds
   CF_ORGANIZATION: ((production-cf-organization))
   CF_SPACE: ((production-cf-space))
 
-staging-cf-creds: &federalist-staging-cf-creds
+federalist-staging-cf-creds: &federalist-staging-cf-creds
   CF_API_URL: ((staging-cf-api-url))
   CF_USERNAME: ((staging-cf-username))
   CF_PASSWORD: ((staging-cf-password))
   CF_ORGANIZATION: ((federalist-staging-cf-organization))
   CF_SPACE: ((federalist-staging-cf-space))
 
-production-cf-creds: &federalist-production-cf-creds
+federalist-production-cf-creds: &federalist-production-cf-creds
   CF_API_URL: ((prod-cf-api-url))
   CF_USERNAME: ((production-cf-username))
   CF_PASSWORD: ((production-cf-password))
@@ -35,893 +35,890 @@ production-cf-creds: &federalist-production-cf-creds
   CF_SPACE: ((federalist-production-cf-space))
 
 jobs:
+  - name: test-s3-broker-dev
+    plan:
+      - in_parallel:
+          - get: broker-src-dev
+            trigger: true
+          - get: broker-config-dev
+            trigger: true
+          - get: general-task
+      - task: test
+        image: general-task
+        input_mapping:
+          broker-config: broker-config-dev
+          broker-src: broker-src-dev
+        file: broker-config-dev/tasks/test.yml
 
-- name: test-s3-broker-dev
-  plan:
-  - in_parallel:
-    - get: broker-src-dev
-      trigger: true
-    - get: broker-config-dev
-      trigger: true
-    - get: general-task
-  - task: test
-    image: general-task
-    file: broker-config-dev/tasks/test-dev.yml
+  - name: push-s3-broker-development
+    serial: true
+    plan:
+      - in_parallel:
+          - get: broker-src-dev
+            passed: [test-s3-broker-dev]
+            trigger: true
+          - get: broker-config-dev
+            passed: [test-s3-broker-dev]
+            trigger: true
+          - get: terraform-yaml-development
+            trigger: true
+          - get: pipeline-tasks
+          - get: general-task
+      - task: build
+        image: general-task
+        file: broker-config-dev/tasks/build.yml
+        input_mapping:
+          broker-src: broker-src-dev
+          broker-config: broker-config-dev
+          terraform-yaml: terraform-yaml-development
+        params:
+          AUTH_USERNAME: ((development-auth-name))
+          AUTH_PASSWORD: ((development-auth-pass))
+          AWS_REGION: ((development-aws-region))
+          AWS_PARTITION: aws-us-gov
+          USER_PREFIX: ((development-user-prefix))
+          POLICY_PREFIX: ((development-policy-prefix))
+          BUCKET_PREFIX: ((development-bucket-prefix))
+          IAM_PATH: ((development-iam-path))
+          CF_API_URL: ((dev-cf-api-url))
+          CF_CLIENT_ID: ((development-cf-client-id))
+          CF_CLIENT_SECRET: ((development-cf-client-secret))
+          CONFIG_FILE_NAME: base-config-template
+          ENVIRONMENT: ((development-environment))
+      - put: deploy-s3-broker-app-development
+        params:
+          path: broker-src-built
+          manifest: broker-src-built/manifest.yml
+          current_app_name: s3-broker
+          vars_files:
+            - vars.yml
+          environment_variables:
+            AWS_REGION: ((development-aws-region))
+            AWS_USE_FIPS_ENDPOINT: "true"
+      - task: update-broker-sandbox-plans
+        file: pipeline-tasks/register-service-broker-and-set-plan-visibility.yml
+        params:
+          <<: *development-cf-creds
+          BROKER_NAME: s3-broker
+          AUTH_USER: ((development-auth-name))
+          AUTH_PASS: ((development-auth-pass))
+          # allow sandbox and non-sandbox orgs to use these plans
+          SERVICES: s3:basic-sandbox s3:basic-public-sandbox
+      - task: update-broker-non-sandbox-plans
+        file: pipeline-tasks/register-service-broker-exclude-sandboxes.yml
+        params:
+          <<: *development-cf-creds
+          BROKER_NAME: s3-broker
+          AUTH_USER: ((development-auth-name))
+          AUTH_PASS: ((development-auth-pass))
+          SERVICES: s3:basic s3:basic-public
 
-- name: push-s3-broker-development
-  serial: true
-  plan:
-  - in_parallel:
-    - get: broker-src-dev
-      passed: [test-s3-broker-dev]
-      trigger: true
-    - get: broker-config-dev
-      passed: [test-s3-broker-dev]
-      trigger: true
-    - get: pipeline-tasks
-    - get: general-task
-  - task: build
-    image: general-task
-    file: broker-config-dev/tasks/build-dev.yml
-    params:
-      AUTH_USERNAME: ((development-auth-name))
-      AUTH_PASSWORD: ((development-auth-pass))
-      AWS_REGION: ((development-aws-region))
-      AWS_PARTITION: aws-us-gov
-      USER_PREFIX: ((development-user-prefix))
-      POLICY_PREFIX: ((development-policy-prefix))
-      BUCKET_PREFIX: ((development-bucket-prefix))
-      IAM_PATH: ((development-iam-path))
-      CF_API_URL: ((dev-cf-api-url))
-      CF_CLIENT_ID: ((development-cf-client-id))
-      CF_CLIENT_SECRET: ((development-cf-client-secret))
-      CONFIG_FILE_NAME: base-config-template
-      ENVIRONMENT: ((development-environment))
-  - put: deploy-s3-broker-app-development
-    params:
-      path: broker-src-built
-      manifest: broker-src-built/manifest.yml
-      current_app_name: s3-broker
-      environment_variables:
-        AWS_REGION: ((development-aws-region))
-        AWS_ACCESS_KEY: ((development-aws-access-key-id))
-        AWS_SECRET_ACCESS_KEY: ((development-aws-secret-access-key))
-        AWS_USE_FIPS_ENDPOINT: "true"
-  - task: update-broker
-    file: pipeline-tasks/register-service-broker-and-set-plan-visibility.yml
-    params:
-      <<: *development-cf-creds
-      BROKER_NAME: s3-broker
-      AUTH_USER: ((development-auth-name))
-      AUTH_PASS: ((development-auth-pass))
-      SERVICES: s3
-  - task: update-broker-sandbox
-    file: pipeline-tasks/register-service-broker-sandboxes.yml
-    params:
-      <<: *development-cf-creds
-      BROKER_NAME: s3-broker
-      AUTH_USER: ((development-auth-name))
-      AUTH_PASS: ((development-auth-pass))
-      SERVICES: s3:basic s3:basic-public
+    on_failure:
+      put: slack
+      params: &slack-channel-failure
+        text: |
+          :x: FAILED to deploy s3-broker on development
+          <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
+        channel: ((slack-channel-failure))
+        username: ((slack-username))
+        icon_url: ((slack-icon-url))
 
-  on_failure:
-    put: slack
-    params: &slack-channel-failure
-      text: |
-        :x: FAILED to deploy s3-broker on development
-        <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
-      channel: ((slack-channel-failure))
-      username: ((slack-username))
-      icon_url: ((slack-icon-url))
-  on_success:
-    put: slack
-    params: &slack-channel-success
-      text: |
-        :white_check_mark: Successfully deployed s3-broker on development
-        <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
-      channel: ((slack-channel-success))
-      username: ((slack-username))
-      icon_url: ((slack-icon-url))
+  - name: acceptance-tests-development
+    serial: true
+    plan:
+      - in_parallel:
+          - get: broker-src-dev
+            passed: [push-s3-broker-development]
+            trigger: true
+          - get: broker-config-dev
+            passed: [push-s3-broker-development]
+            trigger: true
+          - get: general-task
+      - in_parallel:
+          - task: acceptance-tests
+            file: broker-config-dev/tasks/acceptance-tests.yml
+            image: general-task
+            input_mapping:
+              broker-src: broker-src-dev
+            params:
+              <<: *development-cf-creds
+              APP_NAME: s3-acceptance-test
+              SERVICE_NAME: s3
+              PLAN_NAME: basic
+              SERVICE_INSTANCE_NAME: s3-acceptance-test
+              IS_PUBLIC: "false"
+              ENCRYPTION: &encryption |-
+                {
+                  "Rules": [
+                    {
+                      "ApplyServerSideEncryptionByDefault": {
+                        "SSEAlgorithm": "AES256"
+                      },
+                      "BucketKeyEnabled": false
+                    }
+                  ]
+                }
+          - task: acceptance-tests-public
+            file: broker-config-dev/tasks/acceptance-tests-dev.yml
+            image: general-task
+            params:
+              <<: *development-cf-creds
+              APP_NAME: s3-acceptance-test-public
+              SERVICE_NAME: s3
+              PLAN_NAME: basic-public
+              SERVICE_INSTANCE_NAME: s3-acceptance-test-public
+              IS_PUBLIC: "true"
+              ENCRYPTION: *encryption
+          - task: acceptance-tests-public-delete
+            file: broker-config-dev/tasks/acceptance-tests-dev.yml
+            image: general-task
+            params:
+              <<: *development-cf-creds
+              APP_NAME: s3-acceptance-test-public-delete
+              SERVICE_NAME: s3
+              PLAN_NAME: basic-public-sandbox
+              SERVICE_INSTANCE_NAME: s3-acceptance-test-public-delete
+              IS_PUBLIC: "true"
+              IS_DELETE: "true"
+              ENCRYPTION: *encryption
 
-- name: acceptance-tests-development
-  serial: true
-  plan:
-  - in_parallel:
-    - get: broker-src-dev
-      passed: [push-s3-broker-development]
-      trigger: true
-    - get: broker-config-dev
-      passed: [push-s3-broker-development]
-      trigger: true
-    - get: general-task
-  - in_parallel:
-    - task: acceptance-tests
-      file: broker-config-dev/tasks/acceptance-tests-dev.yml
-      image: general-task
+  - name: set-self
+    plan:
+      - get: broker-config
+        trigger: true
+      - get: broker-src
+        trigger: true
+      - set_pipeline: self
+        file: broker-config/pipeline.yml
+
+  - name: test-s3-broker
+    plan:
+      - in_parallel:
+          - get: broker-src
+            trigger: true
+            passed: [set-self]
+          - get: broker-config
+            trigger: true
+            passed: [set-self]
+          - get: general-task
+      - task: test
+        image: general-task
+        file: broker-config/tasks/test.yml
+
+  - name: push-s3-broker-staging
+    serial: true
+    plan:
+      - in_parallel:
+          - get: broker-src
+            passed: [test-s3-broker]
+            trigger: true
+          - get: broker-config
+            passed: [test-s3-broker]
+            trigger: true
+          - get: terraform-yaml-staging
+            trigger: true
+          - get: pipeline-tasks
+          - get: general-task
+      - task: build
+        image: general-task
+        file: broker-config/tasks/build.yml
+        input_mapping:
+          broker-src: broker-src
+          broker-config: broker-config
+          terraform-yaml: terraform-yaml-staging
+        params:
+          AUTH_USERNAME: ((staging-auth-name))
+          AUTH_PASSWORD: ((staging-auth-pass))
+          AWS_REGION: ((staging-aws-region))
+          AWS_PARTITION: aws-us-gov
+          USER_PREFIX: ((staging-user-prefix))
+          POLICY_PREFIX: ((staging-policy-prefix))
+          BUCKET_PREFIX: ((staging-bucket-prefix))
+          IAM_PATH: ((staging-iam-path))
+          CF_API_URL: ((staging-cf-api-url))
+          CF_CLIENT_ID: ((staging-cf-client-id))
+          CF_CLIENT_SECRET: ((staging-cf-client-secret))
+          CONFIG_FILE_NAME: base-config-template
+          ENVIRONMENT: ((staging-environment))
+      - put: deploy-s3-broker-app-staging
+        params:
+          path: broker-src-built
+          manifest: broker-src-built/manifest.yml
+          current_app_name: s3-broker
+          environment_variables:
+            AWS_REGION: ((staging-aws-region))
+            AWS_USE_FIPS_ENDPOINT: "true"
+      - task: update-broker-sandbox-plans
+        file: pipeline-tasks/register-service-broker-and-set-plan-visibility.yml
+        params:
+          <<: *staging-cf-creds
+          BROKER_NAME: s3-broker
+          AUTH_USER: ((staging-auth-name))
+          AUTH_PASS: ((staging-auth-pass))
+          # allow sandbox and non-sandbox orgs to use these plans
+          SERVICES: s3:basic-sandbox s3:basic-public-sandbox
+      - task: update-broker-non-sandbox-plans
+        file: pipeline-tasks/register-service-broker-exclude-sandboxes.yml
+        params:
+          <<: *staging-cf-creds
+          BROKER_NAME: s3-broker
+          AUTH_USER: ((staging-auth-name))
+          AUTH_PASS: ((staging-auth-pass))
+          SERVICES: s3:basic s3:basic-public
+
+    on_failure:
+      put: slack
       params:
-        <<: *development-cf-creds
-        APP_NAME: s3-acceptance-test
-        SERVICE_NAME: s3
-        PLAN_NAME: basic
-        SERVICE_INSTANCE_NAME: s3-acceptance-test
-        IS_PUBLIC: "false"
-        ENCRYPTION: &encryption |-
-          {
-            "Rules": [
-              {
-                "ApplyServerSideEncryptionByDefault": {
-                  "SSEAlgorithm": "AES256"
-                },
-                "BucketKeyEnabled": false
-              }
-            ]
-          }
-    - task: acceptance-tests-public
-      file: broker-config-dev/tasks/acceptance-tests-dev.yml
-      image: general-task
-      params:
-        <<: *development-cf-creds
-        APP_NAME: s3-acceptance-test-public
-        SERVICE_NAME: s3
-        PLAN_NAME: basic-public
-        SERVICE_INSTANCE_NAME: s3-acceptance-test-public
-        IS_PUBLIC: "true"
-        ENCRYPTION: *encryption
-    - task: acceptance-tests-public-delete
-      file: broker-config-dev/tasks/acceptance-tests-dev.yml
-      image: general-task
-      params:
-        <<: *development-cf-creds
-        APP_NAME: s3-acceptance-test-public-delete
-        SERVICE_NAME: s3
-        PLAN_NAME: basic-public-sandbox
-        SERVICE_INSTANCE_NAME: s3-acceptance-test-public-delete
-        IS_PUBLIC: "true"
-        IS_DELETE: "true"
-        ENCRYPTION: *encryption
+        <<: *slack-channel-failure
+        text: |
+          :x: FAILED to deploy s3-broker on staging
+          <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
 
-- name: set-self
-  plan:
-  - get: broker-config
-    trigger: true
-  - get: broker-src
-    trigger: true
-  - set_pipeline: self
-    file: broker-config/pipeline.yml
-
-- name: test-s3-broker
-  plan:
-  - in_parallel:
-    - get: broker-src
-      trigger: true
-      passed: [set-self]
-    - get: broker-config
-      trigger: true
-      passed: [set-self]
-    - get: general-task
-  - task: test
-    image: general-task
-    file: broker-config/tasks/test.yml
-
-- name: push-s3-broker-staging
-  serial: true
-  plan:
-  - in_parallel:
-    - get: broker-src
-      passed: [test-s3-broker]
-      trigger: true
-    - get: broker-config
-      passed: [test-s3-broker]
-      trigger: true
-    - get: pipeline-tasks
-    - get: general-task
-  - task: build
-    image: general-task
-    file: broker-config/tasks/build.yml
-    params:
-      AUTH_USERNAME: ((staging-auth-name))
-      AUTH_PASSWORD: ((staging-auth-pass))
-      AWS_REGION: ((staging-aws-region))
-      AWS_PARTITION: aws-us-gov
-      USER_PREFIX: ((staging-user-prefix))
-      POLICY_PREFIX: ((staging-policy-prefix))
-      BUCKET_PREFIX: ((staging-bucket-prefix))
-      IAM_PATH: ((staging-iam-path))
-      CF_API_URL: ((staging-cf-api-url))
-      CF_CLIENT_ID: ((staging-cf-client-id))
-      CF_CLIENT_SECRET: ((staging-cf-client-secret))
-      CONFIG_FILE_NAME: base-config-template
-      ENVIRONMENT: ((staging-environment))
-  - put: deploy-s3-broker-app-staging
-    params:
-      path: broker-src-built
-      manifest: broker-src-built/manifest.yml
-      current_app_name: s3-broker
-      environment_variables:
-        AWS_REGION: ((staging-aws-region))
-        AWS_ACCESS_KEY: ((staging-aws-access-key-id))
-        AWS_SECRET_ACCESS_KEY: ((staging-aws-secret-access-key))
-        AWS_USE_FIPS_ENDPOINT: "true"
-  - task: update-broker
-    file: pipeline-tasks/register-service-broker-and-set-plan-visibility.yml
-    params:
-      <<: *staging-cf-creds
-      BROKER_NAME: s3-broker
-      AUTH_USER: ((staging-auth-name))
-      AUTH_PASS: ((staging-auth-pass))
-      SERVICES: s3
-  - task: update-broker-sandbox
-    file: pipeline-tasks/register-service-broker-sandboxes.yml
-    params:
-      <<: *staging-cf-creds
-      BROKER_NAME: s3-broker
-      AUTH_USER: ((staging-auth-name))
-      AUTH_PASS: ((staging-auth-pass))
-      SERVICES: s3:basic s3:basic-public
-
-  on_failure:
-    put: slack
-    params:
-      <<: *slack-channel-failure
-      text: |
-        :x: FAILED to deploy s3-broker on staging
-        <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
-  on_success:
-    put: slack
-    params:
-      <<: *slack-channel-success
-      text: |
-        :white_check_mark: Successfully deployed s3-broker on staging
-        <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
-
-- name: push-federalist-s3-broker-staging
-  serial: true
-  plan:
-  - in_parallel:
-    - get: broker-src
-      passed: [test-s3-broker]
-      trigger: true
-    - get: broker-config
-      passed: [test-s3-broker]
-      trigger: true
-    - get: pipeline-tasks
-    - get: general-task
-  - task: build
-    image: general-task
-    file: broker-config/tasks/build.yml
-    params:
-      AUTH_USERNAME: ((staging-auth-name))
-      AUTH_PASSWORD: ((staging-auth-pass))
-      AWS_REGION: ((staging-aws-region))
-      AWS_PARTITION: aws-us-gov
-      USER_PREFIX: ((federalist-staging-user-prefix))
-      POLICY_PREFIX: ((federalist-staging-policy-prefix))
-      BUCKET_PREFIX: ((federalist-staging-bucket-prefix))
-      INTERNAL_VPCE_ID: ((production-s3-vpce_id))
-      IAM_PATH: ((federalist-staging-iam-path))
-      CF_API_URL: ((staging-cf-api-url))
-      CF_CLIENT_ID: ((staging-cf-client-id))
-      CF_CLIENT_SECRET: ((staging-cf-client-secret))
-      CONFIG_FILE_NAME: federalist-config-template
-      ENVIRONMENT: ((staging-environment))
-  - put: deploy-federalist-s3-broker-app-staging
-    params:
-      path: broker-src-built
-      manifest: broker-src-built/manifest.yml
-      current_app_name: federalist-s3-broker
-      environment_variables:
-        AWS_REGION: ((staging-aws-region))
-        AWS_ACCESS_KEY: ((federalist-staging-aws-access-key-id))
-        AWS_SECRET_ACCESS_KEY: ((federalist-staging-aws-secret-access-key))
-        AWS_USE_FIPS_ENDPOINT: "true"
-  - task: update-broker
-    file: pipeline-tasks/register-service-broker-and-set-plan-visibility.yml
-    params:
-      <<: *staging-cf-creds
-      BROKER_NAME: federalist-s3-broker
-      AUTH_USER: ((staging-auth-name))
-      AUTH_PASS: ((staging-auth-pass))
-      SERVICES: federalist-s3:basic federalist-s3:basic-public
-      SERVICE_ORGANIZATION: gsa-18f-federalist
-  on_failure:
-    put: slack
-    params:
-      <<: *slack-channel-failure
-      text: |
-        :x: FAILED to deploy federalist-s3-broker on staging
-        <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
-  on_success:
-    put: slack
-    params:
-      <<: *slack-channel-success
-      text: |
-        :white_check_mark: Successfully deployed federalist-s3-broker on staging
-        <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
-
-- name: acceptance-tests-staging
-  serial: true
-  plan:
-  - in_parallel:
-    - get: broker-src
-      passed: [push-s3-broker-staging]
-      trigger: true
-    - get: broker-config
-      passed: [push-s3-broker-staging]
-      trigger: true
-    - get: general-task
-  - in_parallel:
-    - task: acceptance-tests
-      image: general-task
-      file: broker-config/tasks/acceptance-tests.yml
+  - name: push-federalist-s3-broker-staging
+    serial: true
+    plan:
+      - in_parallel:
+          - get: broker-src
+            passed: [test-s3-broker]
+            trigger: true
+          - get: broker-config
+            passed: [test-s3-broker]
+            trigger: true
+          - get: pipeline-tasks
+          - get: general-task
+      - task: build
+        image: general-task
+        file: broker-config/tasks/build.yml
+        params:
+          AUTH_USERNAME: ((staging-auth-name))
+          AUTH_PASSWORD: ((staging-auth-pass))
+          AWS_REGION: ((staging-aws-region))
+          AWS_PARTITION: aws-us-gov
+          USER_PREFIX: ((federalist-staging-user-prefix))
+          POLICY_PREFIX: ((federalist-staging-policy-prefix))
+          BUCKET_PREFIX: ((federalist-staging-bucket-prefix))
+          INTERNAL_VPCE_ID: ((production-s3-vpce_id))
+          IAM_PATH: ((federalist-staging-iam-path))
+          CF_API_URL: ((staging-cf-api-url))
+          CF_CLIENT_ID: ((staging-cf-client-id))
+          CF_CLIENT_SECRET: ((staging-cf-client-secret))
+          CONFIG_FILE_NAME: federalist-config-template
+          ENVIRONMENT: ((staging-environment))
+      - put: deploy-federalist-s3-broker-app-staging
+        params:
+          path: broker-src-built
+          manifest: broker-src-built/manifest.yml
+          current_app_name: federalist-s3-broker
+          environment_variables:
+            AWS_REGION: ((staging-aws-region))
+            AWS_ACCESS_KEY: ((federalist-staging-aws-access-key-id))
+            AWS_SECRET_ACCESS_KEY: ((federalist-staging-aws-secret-access-key))
+            AWS_USE_FIPS_ENDPOINT: "true"
+      - task: update-broker
+        file: pipeline-tasks/register-service-broker-and-set-plan-visibility.yml
+        params:
+          <<: *staging-cf-creds
+          BROKER_NAME: federalist-s3-broker
+          AUTH_USER: ((staging-auth-name))
+          AUTH_PASS: ((staging-auth-pass))
+          SERVICES: federalist-s3:basic federalist-s3:basic-public
+          SERVICE_ORGANIZATION: gsa-18f-federalist
+    on_failure:
+      put: slack
       params:
-        <<: *staging-cf-creds
-        APP_NAME: s3-acceptance-test
-        SERVICE_NAME: s3
-        PLAN_NAME: basic
-        SERVICE_INSTANCE_NAME: s3-acceptance-test
-        IS_PUBLIC: "false"
-        ENCRYPTION: &encryption |-
-          {
-            "Rules": [
-              {
-                "ApplyServerSideEncryptionByDefault": {
-                  "SSEAlgorithm": "AES256"
-                },
-                "BucketKeyEnabled": false
-              }
-            ]
-          }
-    - task: acceptance-tests-public
-      image: general-task
-      file: broker-config/tasks/acceptance-tests.yml
-      params:
-        <<: *staging-cf-creds
-        APP_NAME: s3-acceptance-test-public
-        SERVICE_NAME: s3
-        PLAN_NAME: basic-public
-        SERVICE_INSTANCE_NAME: s3-acceptance-test-public
-        IS_PUBLIC: "true"
-        ENCRYPTION: *encryption
-    - task: acceptance-tests-public-delete
-      image: general-task
-      file: broker-config/tasks/acceptance-tests.yml
-      params:
-        <<: *staging-cf-creds
-        APP_NAME: s3-acceptance-test-public-delete
-        SERVICE_NAME: s3
-        PLAN_NAME: basic-public-sandbox
-        SERVICE_INSTANCE_NAME: s3-acceptance-test-public-delete
-        IS_PUBLIC: "true"
-        IS_DELETE: "true"
-        ENCRYPTION: *encryption
+        <<: *slack-channel-failure
+        text: |
+          :x: FAILED to deploy federalist-s3-broker on staging
+          <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
 
-- name: federalist-acceptance-tests-staging
-  serial: true
-  plan:
-  - in_parallel:
-    - get: broker-src
-      passed: [push-federalist-s3-broker-staging]
-      trigger: true
-    - get: broker-config
-      passed: [push-federalist-s3-broker-staging]
-      trigger: true
-    - get: general-task
-  - in_parallel:
-    - task: federalist-acceptance-tests
-      image: general-task
-      file: broker-config/tasks/acceptance-tests.yml
-      params:
-        <<: *federalist-staging-cf-creds
-        APP_NAME: federalist-s3-acceptance-test
-        SERVICE_NAME: federalist-s3
-        PLAN_NAME: basic
-        SERVICE_INSTANCE_NAME: federalist-s3-acceptance-test
-        IS_PUBLIC: "false"
-        ENCRYPTION: &encryption |-
-          {
-            "Rules": [
-              {
-                "ApplyServerSideEncryptionByDefault": {
-                  "SSEAlgorithm": "AES256"
-                },
-                "BucketKeyEnabled": false
-              }
-            ]
-          }
-    - task: federalist-acceptance-tests-public
-      image: general-task
-      file: broker-config/tasks/acceptance-tests.yml
-      params:
-        <<: *federalist-staging-cf-creds
-        APP_NAME: federalist-s3-acceptance-test-public
-        SERVICE_NAME: federalist-s3
-        PLAN_NAME: basic-public
-        SERVICE_INSTANCE_NAME: federalist-s3-acceptance-test-public
-        IS_PUBLIC: "true"
-        ENCRYPTION: *encryption
+  - name: acceptance-tests-staging
+    serial: true
+    plan:
+      - in_parallel:
+          - get: broker-src
+            passed: [push-s3-broker-staging]
+            trigger: true
+          - get: broker-config
+            passed: [push-s3-broker-staging]
+            trigger: true
+          - get: general-task
+      - in_parallel:
+          - task: acceptance-tests
+            image: general-task
+            file: broker-config/tasks/acceptance-tests.yml
+            params:
+              <<: *staging-cf-creds
+              APP_NAME: s3-acceptance-test
+              SERVICE_NAME: s3
+              PLAN_NAME: basic
+              SERVICE_INSTANCE_NAME: s3-acceptance-test
+              IS_PUBLIC: "false"
+              ENCRYPTION: &encryption |-
+                {
+                  "Rules": [
+                    {
+                      "ApplyServerSideEncryptionByDefault": {
+                        "SSEAlgorithm": "AES256"
+                      },
+                      "BucketKeyEnabled": false
+                    }
+                  ]
+                }
+          - task: acceptance-tests-public
+            image: general-task
+            file: broker-config/tasks/acceptance-tests.yml
+            params:
+              <<: *staging-cf-creds
+              APP_NAME: s3-acceptance-test-public
+              SERVICE_NAME: s3
+              PLAN_NAME: basic-public
+              SERVICE_INSTANCE_NAME: s3-acceptance-test-public
+              IS_PUBLIC: "true"
+              ENCRYPTION: *encryption
+          - task: acceptance-tests-public-delete
+            image: general-task
+            file: broker-config/tasks/acceptance-tests.yml
+            params:
+              <<: *staging-cf-creds
+              APP_NAME: s3-acceptance-test-public-delete
+              SERVICE_NAME: s3
+              PLAN_NAME: basic-public-sandbox
+              SERVICE_INSTANCE_NAME: s3-acceptance-test-public-delete
+              IS_PUBLIC: "true"
+              IS_DELETE: "true"
+              ENCRYPTION: *encryption
 
-- name: push-s3-broker-production
-  serial: true
-  plan:
-  - in_parallel:
-    - get: broker-src
-      passed: [acceptance-tests-staging]
-      trigger: true
-    - get: broker-config
-      passed: [acceptance-tests-staging]
-      trigger: true
-    - get: pipeline-tasks
-    - get: general-task
-  - task: build
-    image: general-task
-    file: broker-config/tasks/build.yml
-    params:
-      AUTH_USERNAME: ((production-auth-name))
-      AUTH_PASSWORD: ((production-auth-pass))
-      AWS_REGION: ((production-aws-region))
-      AWS_PARTITION: aws-us-gov
-      USER_PREFIX: ((production-user-prefix))
-      POLICY_PREFIX: ((production-policy-prefix))
-      BUCKET_PREFIX: ((production-bucket-prefix))
-      IAM_PATH: ((production-iam-path))
-      CF_API_URL: ((prod-cf-api-url))
-      CF_CLIENT_ID: ((production-cf-client-id))
-      CF_CLIENT_SECRET: ((production-cf-client-secret))
-      CONFIG_FILE_NAME: base-config-template
-      ENVIRONMENT: ((production-environment))
-  - put: deploy-s3-broker-app-production
-    params:
-      path: broker-src-built
-      manifest: broker-src-built/manifest.yml
-      current_app_name: s3-broker
-      environment_variables:
-        AWS_REGION: ((production-aws-region))
-        AWS_ACCESS_KEY: ((production-aws-access-key-id))
-        AWS_SECRET_ACCESS_KEY: ((production-aws-secret-access-key))
-        AWS_USE_FIPS_ENDPOINT: "true"
-  - task: update-broker
-    file: pipeline-tasks/register-service-broker-and-set-plan-visibility.yml
-    params:
-      <<: *production-cf-creds
-      BROKER_NAME: s3-broker
-      AUTH_USER: ((production-auth-name))
-      AUTH_PASS: ((production-auth-pass))
-      SERVICES: s3
-  - task: update-broker-sandbox
-    file: pipeline-tasks/register-service-broker-sandboxes.yml
-    params:
-      <<: *production-cf-creds
-      BROKER_NAME: s3-broker
-      AUTH_USER: ((production-auth-name))
-      AUTH_PASS: ((production-auth-pass))
-      SERVICES: s3:basic s3:basic-public
-  on_failure:
-    put: slack
-    params:
-      <<: *slack-channel-failure
-      text: |
-        :x: FAILED to deploy s3-broker on production
-        <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
-  on_success:
-    put: slack
-    params:
-      <<: *slack-channel-success
-      text: |
-        :white_check_mark: Successfully deployed s3-broker on production
-        <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
+  - name: federalist-acceptance-tests-staging
+    serial: true
+    plan:
+      - in_parallel:
+          - get: broker-src
+            passed: [push-federalist-s3-broker-staging]
+            trigger: true
+          - get: broker-config
+            passed: [push-federalist-s3-broker-staging]
+            trigger: true
+          - get: general-task
+      - in_parallel:
+          - task: federalist-acceptance-tests
+            image: general-task
+            file: broker-config/tasks/acceptance-tests.yml
+            params:
+              <<: *federalist-staging-cf-creds
+              APP_NAME: federalist-s3-acceptance-test
+              SERVICE_NAME: federalist-s3
+              PLAN_NAME: basic
+              SERVICE_INSTANCE_NAME: federalist-s3-acceptance-test
+              IS_PUBLIC: "false"
+              ENCRYPTION: &encryption |-
+                {
+                  "Rules": [
+                    {
+                      "ApplyServerSideEncryptionByDefault": {
+                        "SSEAlgorithm": "AES256"
+                      },
+                      "BucketKeyEnabled": false
+                    }
+                  ]
+                }
+          - task: federalist-acceptance-tests-public
+            image: general-task
+            file: broker-config/tasks/acceptance-tests.yml
+            params:
+              <<: *federalist-staging-cf-creds
+              APP_NAME: federalist-s3-acceptance-test-public
+              SERVICE_NAME: federalist-s3
+              PLAN_NAME: basic-public
+              SERVICE_INSTANCE_NAME: federalist-s3-acceptance-test-public
+              IS_PUBLIC: "true"
+              ENCRYPTION: *encryption
 
-- name: push-federalist-s3-broker-production
-  serial: true
-  plan:
-  - in_parallel:
-    - get: broker-src
-      passed: [federalist-acceptance-tests-staging]
-      trigger: true
-    - get: broker-config
-      passed: [federalist-acceptance-tests-staging]
-      trigger: true
-    - get: pipeline-tasks
-    - get: general-task
-  - task: build
-    image: general-task
-    file: broker-config/tasks/build.yml
-    params:
-      AUTH_USERNAME: ((production-auth-name))
-      AUTH_PASSWORD: ((production-auth-pass))
-      AWS_REGION: ((federalist-production-aws-region))
-      AWS_PARTITION: aws-us-gov
-      USER_PREFIX: ((federalist-production-user-prefix))
-      POLICY_PREFIX: ((federalist-production-policy-prefix))
-      BUCKET_PREFIX: ((federalist-production-bucket-prefix))
-      INTERNAL_VPCE_ID: ((production-s3-vpce_id))
-      IAM_PATH: ((federalist-production-iam-path))
-      CF_API_URL: ((prod-cf-api-url))
-      CF_CLIENT_ID: ((production-cf-client-id))
-      CF_CLIENT_SECRET: ((production-cf-client-secret))
-      CONFIG_FILE_NAME: federalist-config-template
-      ENVIRONMENT: ((production-environment))
-  - put: deploy-federalist-s3-broker-app-production
-    params:
-      path: broker-src-built
-      manifest: broker-src-built/manifest.yml
-      current_app_name: federalist-s3-broker
-      environment_variables:
-        AWS_REGION: ((federalist-production-aws-region))
-        AWS_ACCESS_KEY: ((federalist-production-aws-access-key-id))
-        AWS_SECRET_ACCESS_KEY: ((federalist-production-aws-secret-access-key))
-        AWS_USE_FIPS_ENDPOINT: "true"
-  - task: update-broker
-    file: pipeline-tasks/register-service-broker-and-set-plan-visibility.yml
-    params:
-      <<: *production-cf-creds
-      BROKER_NAME: federalist-s3-broker
-      AUTH_USER: ((production-auth-name))
-      AUTH_PASS: ((production-auth-pass))
-      SERVICES: federalist-s3:basic federalist-s3:basic-public federalist-s3:basic-vpc
-      SERVICE_ORGANIZATION: gsa-18f-federalist
-  on_failure:
-    put: slack
-    params:
-      <<: *slack-channel-failure
-      text: |
-        :x: FAILED to deploy federalist-s3-broker on production
-        <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
-  on_success:
-    put: slack
-    params:
-      <<: *slack-channel-success
-      text: |
-        :white_check_mark: Successfully deployed federalist-s3-broker on production
-        <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
+  - name: push-s3-broker-production
+    serial: true
+    plan:
+      - in_parallel:
+          - get: broker-src
+            passed: [acceptance-tests-staging]
+            trigger: true
+          - get: broker-config
+            passed: [acceptance-tests-staging]
+            trigger: true
+          - get: pipeline-tasks
+          - get: general-task
+          - get: terraform-yaml-production
+            trigger: true
+      - task: build
+        image: general-task
+        file: broker-config/tasks/build.yml
+        input_mapping:
+          broker-src: broker-src
+          broker-config: broker-config
+          terraform-yaml: terraform-yaml-production
+        params:
+          AUTH_USERNAME: ((production-auth-name))
+          AUTH_PASSWORD: ((production-auth-pass))
+          AWS_REGION: ((production-aws-region))
+          AWS_PARTITION: aws-us-gov
+          USER_PREFIX: ((production-user-prefix))
+          POLICY_PREFIX: ((production-policy-prefix))
+          BUCKET_PREFIX: ((production-bucket-prefix))
+          IAM_PATH: ((production-iam-path))
+          CF_API_URL: ((prod-cf-api-url))
+          CF_CLIENT_ID: ((production-cf-client-id))
+          CF_CLIENT_SECRET: ((production-cf-client-secret))
+          CONFIG_FILE_NAME: base-config-template
+          ENVIRONMENT: ((production-environment))
+      - put: deploy-s3-broker-app-production
+        params:
+          path: broker-src-built
+          manifest: broker-src-built/manifest.yml
+          current_app_name: s3-broker
+          environment_variables:
+            AWS_REGION: ((production-aws-region))
+            AWS_USE_FIPS_ENDPOINT: "true"
+      - task: update-broker-sandbox-plans
+        file: pipeline-tasks/register-service-broker-and-set-plan-visibility.yml
+        params:
+          <<: *production-cf-creds
+          BROKER_NAME: s3-broker
+          AUTH_USER: ((production-auth-name))
+          AUTH_PASS: ((production-auth-pass))
+          # allow sandbox and non-sandbox orgs to use these plans
+          SERVICES: s3:basic-sandbox s3:basic-public-sandbox
+      - task: update-broker-non-sandbox-plans
+        file: pipeline-tasks/register-service-broker-exclude-sandboxes.yml
+        params:
+          <<: *production-cf-creds
+          BROKER_NAME: s3-broker
+          AUTH_USER: ((production-auth-name))
+          AUTH_PASS: ((production-auth-pass))
+          SERVICES: s3:basic s3:basic-public
+    on_failure:
+      put: slack
+      params:
+        <<: *slack-channel-failure
+        text: |
+          :x: FAILED to deploy s3-broker on production
+          <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
 
-- name: push-pages-s3-broker-production
-  serial: true
-  plan:
-  - in_parallel:
-    - get: broker-src
-      passed: [federalist-acceptance-tests-staging]
-      trigger: true
-    - get: broker-config
-      passed: [federalist-acceptance-tests-staging]
-      trigger: true
-    - get: pipeline-tasks
-    - get: general-task
-  - task: build
-    image: general-task
-    file: broker-config/tasks/build.yml
-    params:
-      AUTH_USERNAME: ((production-auth-name))
-      AUTH_PASSWORD: ((production-auth-pass))
-      AWS_REGION: ((federalist-production-aws-region))
-      AWS_PARTITION: aws-us-gov
-      USER_PREFIX: ((federalist-production-user-prefix))
-      POLICY_PREFIX: ((federalist-production-policy-prefix))
-      BUCKET_PREFIX: ((federalist-production-bucket-prefix))
-      INTERNAL_VPCE_ID: ((production-s3-vpce_id))
-      IAM_PATH: ((federalist-production-iam-path))
-      CF_API_URL: ((prod-cf-api-url))
-      CF_CLIENT_ID: ((production-cf-client-id))
-      CF_CLIENT_SECRET: ((production-cf-client-secret))
-      CONFIG_FILE_NAME: pages-config-template
-      ENVIRONMENT: ((production-environment))
-  - put: deploy-pages-s3-broker-app-production
-    params:
-      path: broker-src-built
-      manifest: broker-src-built/manifest.yml
-      current_app_name: pages-s3-broker
-      environment_variables:
-        AWS_REGION: ((federalist-production-aws-region))
-        AWS_ACCESS_KEY: ((federalist-production-aws-access-key-id))
-        AWS_SECRET_ACCESS_KEY: ((federalist-production-aws-secret-access-key))
-        AWS_USE_FIPS_ENDPOINT: "true"
-  - task: update-broker
-    file: pipeline-tasks/register-service-broker-and-set-plan-visibility.yml
-    params:
-      <<: *production-cf-creds
-      BROKER_NAME: pages-s3-broker
-      AUTH_USER: ((production-auth-name))
-      AUTH_PASS: ((production-auth-pass))
-      SERVICES: pages-s3:basic pages-s3:basic-vpc
-      SERVICE_ORGANIZATION: gsa-18f-federalist
-  on_failure:
-    put: slack
-    params:
-      <<: *slack-channel-failure
-      text: |
-        :x: FAILED to deploy pages-s3-broker on production
-        <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
-  on_success:
-    put: slack
-    params:
-      <<: *slack-channel-success
-      text: |
-        :white_check_mark: Successfully deployed pages-s3-broker on production
-        <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
+  - name: push-federalist-s3-broker-production
+    serial: true
+    plan:
+      - in_parallel:
+          - get: broker-src
+            passed: [federalist-acceptance-tests-staging]
+            trigger: true
+          - get: broker-config
+            passed: [federalist-acceptance-tests-staging]
+            trigger: true
+          - get: pipeline-tasks
+          - get: general-task
+      - task: build
+        image: general-task
+        file: broker-config/tasks/build.yml
+        params:
+          AUTH_USERNAME: ((production-auth-name))
+          AUTH_PASSWORD: ((production-auth-pass))
+          AWS_REGION: ((federalist-production-aws-region))
+          AWS_PARTITION: aws-us-gov
+          USER_PREFIX: ((federalist-production-user-prefix))
+          POLICY_PREFIX: ((federalist-production-policy-prefix))
+          BUCKET_PREFIX: ((federalist-production-bucket-prefix))
+          INTERNAL_VPCE_ID: ((production-s3-vpce_id))
+          IAM_PATH: ((federalist-production-iam-path))
+          CF_API_URL: ((prod-cf-api-url))
+          CF_CLIENT_ID: ((production-cf-client-id))
+          CF_CLIENT_SECRET: ((production-cf-client-secret))
+          CONFIG_FILE_NAME: federalist-config-template
+          ENVIRONMENT: ((production-environment))
+      - put: deploy-federalist-s3-broker-app-production
+        params:
+          path: broker-src-built
+          manifest: broker-src-built/manifest.yml
+          current_app_name: federalist-s3-broker
+          environment_variables:
+            AWS_REGION: ((federalist-production-aws-region))
+            AWS_ACCESS_KEY: ((federalist-production-aws-access-key-id))
+            AWS_SECRET_ACCESS_KEY: ((federalist-production-aws-secret-access-key))
+            AWS_USE_FIPS_ENDPOINT: "true"
+      - task: update-broker
+        file: pipeline-tasks/register-service-broker-and-set-plan-visibility.yml
+        params:
+          <<: *production-cf-creds
+          BROKER_NAME: federalist-s3-broker
+          AUTH_USER: ((production-auth-name))
+          AUTH_PASS: ((production-auth-pass))
+          SERVICES: federalist-s3:basic federalist-s3:basic-public federalist-s3:basic-vpc
+          SERVICE_ORGANIZATION: gsa-18f-federalist
+    on_failure:
+      put: slack
+      params:
+        <<: *slack-channel-failure
+        text: |
+          :x: FAILED to deploy federalist-s3-broker on production
+          <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
 
+  - name: push-pages-s3-broker-production
+    serial: true
+    plan:
+      - in_parallel:
+          - get: broker-src
+            passed: [federalist-acceptance-tests-staging]
+            trigger: true
+          - get: broker-config
+            passed: [federalist-acceptance-tests-staging]
+            trigger: true
+          - get: pipeline-tasks
+          - get: general-task
+      - task: build
+        image: general-task
+        file: broker-config/tasks/build.yml
+        params:
+          AUTH_USERNAME: ((production-auth-name))
+          AUTH_PASSWORD: ((production-auth-pass))
+          AWS_REGION: ((federalist-production-aws-region))
+          AWS_PARTITION: aws-us-gov
+          USER_PREFIX: ((federalist-production-user-prefix))
+          POLICY_PREFIX: ((federalist-production-policy-prefix))
+          BUCKET_PREFIX: ((federalist-production-bucket-prefix))
+          INTERNAL_VPCE_ID: ((production-s3-vpce_id))
+          IAM_PATH: ((federalist-production-iam-path))
+          CF_API_URL: ((prod-cf-api-url))
+          CF_CLIENT_ID: ((production-cf-client-id))
+          CF_CLIENT_SECRET: ((production-cf-client-secret))
+          CONFIG_FILE_NAME: pages-config-template
+          ENVIRONMENT: ((production-environment))
+      - put: deploy-pages-s3-broker-app-production
+        params:
+          path: broker-src-built
+          manifest: broker-src-built/manifest.yml
+          current_app_name: pages-s3-broker
+          environment_variables:
+            AWS_REGION: ((federalist-production-aws-region))
+            AWS_ACCESS_KEY: ((federalist-production-aws-access-key-id))
+            AWS_SECRET_ACCESS_KEY: ((federalist-production-aws-secret-access-key))
+            AWS_USE_FIPS_ENDPOINT: "true"
+      - task: update-broker
+        file: pipeline-tasks/register-service-broker-and-set-plan-visibility.yml
+        params:
+          <<: *production-cf-creds
+          BROKER_NAME: pages-s3-broker
+          AUTH_USER: ((production-auth-name))
+          AUTH_PASS: ((production-auth-pass))
+          SERVICES: pages-s3:basic pages-s3:basic-vpc
+          SERVICE_ORGANIZATION: gsa-18f-federalist
+    on_failure:
+      put: slack
+      params:
+        <<: *slack-channel-failure
+        text: |
+          :x: FAILED to deploy pages-s3-broker on production
+          <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
 
-- name: acceptance-tests-production
-  serial: true
-  plan:
-  - in_parallel:
-    - get: broker-src
-      passed: [push-s3-broker-production]
-      trigger: true
-    - get: broker-config
-      passed: [push-s3-broker-production]
-      trigger: true
-    - get: general-task
-  - in_parallel:
-    - task: acceptance-tests
-      image: general-task
-      file: broker-config/tasks/acceptance-tests.yml
-      params:
-        <<: *production-cf-creds
-        APP_NAME: s3-acceptance-test
-        SERVICE_NAME: s3
-        PLAN_NAME: basic
-        SERVICE_INSTANCE_NAME: s3-acceptance-test
-        IS_PUBLIC: "false"
-        ENCRYPTION: *encryption
-    - task: acceptance-tests-public
-      image: general-task
-      file: broker-config/tasks/acceptance-tests.yml
-      params:
-        <<: *production-cf-creds
-        APP_NAME: s3-acceptance-test-public
-        SERVICE_NAME: s3
-        PLAN_NAME: basic-public
-        SERVICE_INSTANCE_NAME: s3-acceptance-test-public
-        IS_PUBLIC: "true"
-        ENCRYPTION: *encryption
-    - task: acceptance-tests-public-delete
-      image: general-task
-      file: broker-config/tasks/acceptance-tests.yml
-      params:
-        <<: *production-cf-creds
-        APP_NAME: s3-acceptance-test-public-delete
-        SERVICE_NAME: s3
-        PLAN_NAME: basic-public-sandbox
-        SERVICE_INSTANCE_NAME: s3-acceptance-test-public-delete
-        IS_PUBLIC: "true"
-        IS_DELETE: "true"
-        ENCRYPTION: *encryption
+  - name: acceptance-tests-production
+    serial: true
+    plan:
+      - in_parallel:
+          - get: broker-src
+            passed: [push-s3-broker-production]
+            trigger: true
+          - get: broker-config
+            passed: [push-s3-broker-production]
+            trigger: true
+          - get: general-task
+      - in_parallel:
+          - task: acceptance-tests
+            image: general-task
+            file: broker-config/tasks/acceptance-tests.yml
+            params:
+              <<: *production-cf-creds
+              APP_NAME: s3-acceptance-test
+              SERVICE_NAME: s3
+              PLAN_NAME: basic
+              SERVICE_INSTANCE_NAME: s3-acceptance-test
+              IS_PUBLIC: "false"
+              ENCRYPTION: *encryption
+          - task: acceptance-tests-public
+            image: general-task
+            file: broker-config/tasks/acceptance-tests.yml
+            params:
+              <<: *production-cf-creds
+              APP_NAME: s3-acceptance-test-public
+              SERVICE_NAME: s3
+              PLAN_NAME: basic-public
+              SERVICE_INSTANCE_NAME: s3-acceptance-test-public
+              IS_PUBLIC: "true"
+              ENCRYPTION: *encryption
+          - task: acceptance-tests-public-delete
+            image: general-task
+            file: broker-config/tasks/acceptance-tests.yml
+            params:
+              <<: *production-cf-creds
+              APP_NAME: s3-acceptance-test-public-delete
+              SERVICE_NAME: s3
+              PLAN_NAME: basic-public-sandbox
+              SERVICE_INSTANCE_NAME: s3-acceptance-test-public-delete
+              IS_PUBLIC: "true"
+              IS_DELETE: "true"
+              ENCRYPTION: *encryption
 
-- name: federalist-acceptance-tests-production
-  serial: true
-  plan:
-  - in_parallel:
-    - get: broker-src
-      passed: [push-federalist-s3-broker-production]
-      trigger: true
-    - get: broker-config
-      passed: [push-federalist-s3-broker-production]
-      trigger: true
-    - get: general-task
-  - in_parallel:
-    - task: acceptance-tests
-      image: general-task
-      file: broker-config/tasks/acceptance-tests.yml
-      params:
-        <<: *federalist-production-cf-creds
-        APP_NAME: federalist-s3-acceptance-test
-        SERVICE_NAME: federalist-s3
-        PLAN_NAME: basic
-        SERVICE_INSTANCE_NAME: federalist-s3-acceptance-test
-        IS_PUBLIC: "false"
-        ENCRYPTION: *encryption
-    - task: acceptance-tests-public
-      image: general-task
-      file: broker-config/tasks/acceptance-tests.yml
-      params:
-        <<: *federalist-production-cf-creds
-        APP_NAME: federalist-s3-acceptance-test-public
-        SERVICE_NAME: federalist-s3
-        PLAN_NAME: basic-public
-        SERVICE_INSTANCE_NAME: federalist-s3-acceptance-test-public
-        IS_PUBLIC: "true"
-        ENCRYPTION: *encryption
-    - task: acceptance-tests-vpc
-      image: general-task
-      file: broker-config/tasks/acceptance-tests.yml
-      params:
-        <<: *federalist-production-cf-creds
-        APP_NAME: federalist-s3-acceptance-test-vpc
-        SERVICE_NAME: federalist-s3
-        PLAN_NAME: basic-vpc
-        SERVICE_INSTANCE_NAME: federalist-s3-acceptance-test-vpc
-        IS_PUBLIC: "true"
-        ENCRYPTION: *encryption
+  - name: federalist-acceptance-tests-production
+    serial: true
+    plan:
+      - in_parallel:
+          - get: broker-src
+            passed: [push-federalist-s3-broker-production]
+            trigger: true
+          - get: broker-config
+            passed: [push-federalist-s3-broker-production]
+            trigger: true
+          - get: general-task
+      - in_parallel:
+          - task: acceptance-tests
+            image: general-task
+            file: broker-config/tasks/acceptance-tests.yml
+            params:
+              <<: *federalist-production-cf-creds
+              APP_NAME: federalist-s3-acceptance-test
+              SERVICE_NAME: federalist-s3
+              PLAN_NAME: basic
+              SERVICE_INSTANCE_NAME: federalist-s3-acceptance-test
+              IS_PUBLIC: "false"
+              ENCRYPTION: *encryption
+          - task: acceptance-tests-public
+            image: general-task
+            file: broker-config/tasks/acceptance-tests.yml
+            params:
+              <<: *federalist-production-cf-creds
+              APP_NAME: federalist-s3-acceptance-test-public
+              SERVICE_NAME: federalist-s3
+              PLAN_NAME: basic-public
+              SERVICE_INSTANCE_NAME: federalist-s3-acceptance-test-public
+              IS_PUBLIC: "true"
+              ENCRYPTION: *encryption
+          - task: acceptance-tests-vpc
+            image: general-task
+            file: broker-config/tasks/acceptance-tests.yml
+            params:
+              <<: *federalist-production-cf-creds
+              APP_NAME: federalist-s3-acceptance-test-vpc
+              SERVICE_NAME: federalist-s3
+              PLAN_NAME: basic-vpc
+              SERVICE_INSTANCE_NAME: federalist-s3-acceptance-test-vpc
+              IS_PUBLIC: "true"
+              ENCRYPTION: *encryption
 
-- name: pages-acceptance-tests-production
-  serial: true
-  plan:
-  - in_parallel:
-    - get: broker-src
-      passed: [push-pages-s3-broker-production]
-      trigger: true
-    - get: broker-config
-      passed: [push-pages-s3-broker-production]
-      trigger: true
-    - get: general-task
-  - in_parallel:
-    - task: acceptance-tests
-      image: general-task
-      file: broker-config/tasks/acceptance-tests.yml
-      params:
-        <<: *federalist-production-cf-creds
-        APP_NAME: pages-s3-acceptance-test
-        SERVICE_NAME: pages-s3
-        PLAN_NAME: basic
-        SERVICE_INSTANCE_NAME: pages-s3-acceptance-test
-        IS_PUBLIC: "false"
-        ENCRYPTION: *encryption
-    - task: acceptance-tests-vpc
-      image: general-task
-      file: broker-config/tasks/acceptance-tests.yml
-      params:
-        <<: *federalist-production-cf-creds
-        APP_NAME: pages-s3-acceptance-test-vpc
-        SERVICE_NAME: pages-s3
-        PLAN_NAME: basic-vpc
-        SERVICE_INSTANCE_NAME: pages-s3-acceptance-test-vpc
-        IS_PUBLIC: "true"
-        ENCRYPTION: *encryption
+  - name: pages-acceptance-tests-production
+    serial: true
+    plan:
+      - in_parallel:
+          - get: broker-src
+            passed: [push-pages-s3-broker-production]
+            trigger: true
+          - get: broker-config
+            passed: [push-pages-s3-broker-production]
+            trigger: true
+          - get: general-task
+      - in_parallel:
+          - task: acceptance-tests
+            image: general-task
+            file: broker-config/tasks/acceptance-tests.yml
+            params:
+              <<: *federalist-production-cf-creds
+              APP_NAME: pages-s3-acceptance-test
+              SERVICE_NAME: pages-s3
+              PLAN_NAME: basic
+              SERVICE_INSTANCE_NAME: pages-s3-acceptance-test
+              IS_PUBLIC: "false"
+              ENCRYPTION: *encryption
+          - task: acceptance-tests-vpc
+            image: general-task
+            file: broker-config/tasks/acceptance-tests.yml
+            params:
+              <<: *federalist-production-cf-creds
+              APP_NAME: pages-s3-acceptance-test-vpc
+              SERVICE_NAME: pages-s3
+              PLAN_NAME: basic-vpc
+              SERVICE_INSTANCE_NAME: pages-s3-acceptance-test-vpc
+              IS_PUBLIC: "true"
+              ENCRYPTION: *encryption
 
 resource_types:
-- name: registry-image
-  type: registry-image
-  source:
-    aws_access_key_id: ((ecr_aws_key))
-    aws_secret_access_key: ((ecr_aws_secret))
-    repository: registry-image-resource
-    aws_region: us-gov-west-1
-    tag: latest
+  - name: registry-image
+    type: registry-image
+    source:
+      aws_access_key_id: ((ecr_aws_key))
+      aws_secret_access_key: ((ecr_aws_secret))
+      repository: registry-image-resource
+      aws_region: us-gov-west-1
+      tag: latest
 
-- name: git
-  type: registry-image
-  source:
-    aws_access_key_id: ((ecr_aws_key))
-    aws_secret_access_key: ((ecr_aws_secret))
-    repository: git-resource
-    aws_region: us-gov-west-1
-    tag: latest
+  - name: git
+    type: registry-image
+    source:
+      aws_access_key_id: ((ecr_aws_key))
+      aws_secret_access_key: ((ecr_aws_secret))
+      repository: git-resource
+      aws_region: us-gov-west-1
+      tag: latest
 
-- name: cf
-  type: registry-image
-  source:
-    aws_access_key_id: ((ecr_aws_key))
-    aws_secret_access_key: ((ecr_aws_secret))
-    repository: cf-resource
-    aws_region: us-gov-west-1
-    tag: latest
+  - name: cf
+    type: registry-image
+    source:
+      aws_access_key_id: ((ecr_aws_key))
+      aws_secret_access_key: ((ecr_aws_secret))
+      repository: cf-resource
+      aws_region: us-gov-west-1
+      tag: latest
 
-- name: slack-notification
-  type: registry-image
-  source:
-    aws_access_key_id: ((ecr_aws_key))
-    aws_secret_access_key: ((ecr_aws_secret))
-    repository: slack-notification-resource
-    aws_region: us-gov-west-1
-    tag: latest
+  - name: slack-notification
+    type: registry-image
+    source:
+      aws_access_key_id: ((ecr_aws_key))
+      aws_secret_access_key: ((ecr_aws_secret))
+      repository: slack-notification-resource
+      aws_region: us-gov-west-1
+      tag: latest
 
-- name: s3-iam
-  type: registry-image
-  source:
-    aws_access_key_id: ((ecr_aws_key))
-    aws_secret_access_key: ((ecr_aws_secret))
-    repository: s3-resource
-    aws_region: us-gov-west-1
-    tag: latest
+  - name: s3-iam
+    type: registry-image
+    source:
+      aws_access_key_id: ((ecr_aws_key))
+      aws_secret_access_key: ((ecr_aws_secret))
+      repository: s3-resource
+      aws_region: us-gov-west-1
+      tag: latest
 
-- name: semver-iam
-  type: registry-image
-  source:
-    aws_access_key_id: ((ecr_aws_key))
-    aws_secret_access_key: ((ecr_aws_secret))
-    repository: semver-resource
-    aws_region: us-gov-west-1
-    tag: latest
+  - name: semver-iam
+    type: registry-image
+    source:
+      aws_access_key_id: ((ecr_aws_key))
+      aws_secret_access_key: ((ecr_aws_secret))
+      repository: semver-resource
+      aws_region: us-gov-west-1
+      tag: latest
 
 resources:
-- name: broker-src
-  type: git
-  source:
-    uri: https://github.com/cloud-gov/s3-broker
-    branch: main
-    commit_verification_keys: ((cloud-gov-pgp-keys))
+  - name: broker-src
+    type: git
+    source:
+      uri: https://github.com/cloud-gov/s3-broker
+      branch: main
+      commit_verification_keys: ((cloud-gov-pgp-keys))
 
-- name: broker-src-dev
-  type: git
-  source:
-    uri: https://github.com/cloud-gov/s3-broker
-    branch: main
-    commit_verification_keys: ((cloud-gov-pgp-keys))
+  - name: broker-src-dev
+    type: git
+    source:
+      uri: https://github.com/cloud-gov/s3-broker
+      branch: main
+      commit_verification_keys: ((cloud-gov-pgp-keys))
 
-- name: broker-config
-  type: git
-  source:
-    uri: https://github.com/cloud-gov/cg-deploy-s3-broker
-    branch: main
-    commit_verification_keys: ((cloud-gov-pgp-keys))
+  - name: broker-config
+    type: git
+    source:
+      uri: https://github.com/cloud-gov/cg-deploy-s3-broker
+      branch: main
+      commit_verification_keys: ((cloud-gov-pgp-keys))
 
-- name: broker-config-dev
-  type: git
-  source:
-    uri: https://github.com/cloud-gov/cg-deploy-s3-broker
-    branch: main
-    commit_verification_keys: ((cloud-gov-pgp-keys))
+  - name: broker-config-dev
+    type: git
+    source:
+      uri: https://github.com/cloud-gov/cg-deploy-s3-broker
+      branch: disable-sandbox-plans
+      commit_verification_keys: ((cloud-gov-pgp-keys))
 
-- name: pipeline-tasks
-  type: git
-  source:
-    uri: https://github.com/cloud-gov/cg-pipeline-tasks
-    branch: main
-    commit_verification_keys: ((cloud-gov-pgp-keys))
+  - name: pipeline-tasks
+    type: git
+    source:
+      uri: https://github.com/cloud-gov/cg-pipeline-tasks
+      branch: main
+      commit_verification_keys: ((cloud-gov-pgp-keys))
 
-- name: deploy-s3-broker-app-development
-  type: cf
-  source:
-    api: ((dev-cf-api-url))
-    username: ((development-cf-username))
-    password: ((development-cf-password))
-    organization: ((development-cf-organization))
-    space: ((development-cf-space))
+  - name: deploy-s3-broker-app-development
+    type: cf
+    source:
+      api: ((dev-cf-api-url))
+      username: ((development-cf-username))
+      password: ((development-cf-password))
+      organization: ((development-cf-organization))
+      space: ((development-cf-space))
 
-- name: deploy-s3-broker-app-staging
-  type: cf
-  source:
-    api: ((staging-cf-api-url))
-    username: ((staging-cf-username))
-    password: ((staging-cf-password))
-    organization: ((staging-cf-organization))
-    space: ((staging-cf-space))
+  - name: deploy-s3-broker-app-staging
+    type: cf
+    source:
+      api: ((staging-cf-api-url))
+      username: ((staging-cf-username))
+      password: ((staging-cf-password))
+      organization: ((staging-cf-organization))
+      space: ((staging-cf-space))
 
-- name: deploy-federalist-s3-broker-app-staging
-  type: cf
-  source:
-    api: ((staging-cf-api-url))
-    username: ((staging-cf-username))
-    password: ((staging-cf-password))
-    organization: ((staging-cf-organization))
-    space: ((staging-cf-space))
+  - name: deploy-federalist-s3-broker-app-staging
+    type: cf
+    source:
+      api: ((staging-cf-api-url))
+      username: ((staging-cf-username))
+      password: ((staging-cf-password))
+      organization: ((staging-cf-organization))
+      space: ((staging-cf-space))
 
-- name: deploy-s3-broker-app-production
-  type: cf
-  source:
-    api: ((prod-cf-api-url))
-    username: ((production-cf-username))
-    password: ((production-cf-password))
-    organization: ((production-cf-organization))
-    space: ((production-cf-space))
+  - name: deploy-s3-broker-app-production
+    type: cf
+    source:
+      api: ((prod-cf-api-url))
+      username: ((production-cf-username))
+      password: ((production-cf-password))
+      organization: ((production-cf-organization))
+      space: ((production-cf-space))
 
-- name: deploy-federalist-s3-broker-app-production
-  type: cf
-  source:
-    api: ((prod-cf-api-url))
-    username: ((production-cf-username))
-    password: ((production-cf-password))
-    organization: ((production-cf-organization))
-    space: ((production-cf-space))
+  - name: deploy-federalist-s3-broker-app-production
+    type: cf
+    source:
+      api: ((prod-cf-api-url))
+      username: ((production-cf-username))
+      password: ((production-cf-password))
+      organization: ((production-cf-organization))
+      space: ((production-cf-space))
 
-- name: deploy-pages-s3-broker-app-production
-  type: cf
-  source:
-    api: ((prod-cf-api-url))
-    username: ((production-cf-username))
-    password: ((production-cf-password))
-    organization: ((production-cf-organization))
-    space: ((production-cf-space))
+  - name: deploy-pages-s3-broker-app-production
+    type: cf
+    source:
+      api: ((prod-cf-api-url))
+      username: ((production-cf-username))
+      password: ((production-cf-password))
+      organization: ((production-cf-organization))
+      space: ((production-cf-space))
 
-- name: slack
-  type: slack-notification
-  source:
-    url: ((slack-webhook-url))
+  - name: slack
+    type: slack-notification
+    source:
+      url: ((slack-webhook-url))
 
-- name: general-task
-  type: registry-image
-  source:
-    aws_access_key_id: ((ecr_aws_key))
-    aws_secret_access_key: ((ecr_aws_secret))
-    repository: general-task
-    aws_region: us-gov-west-1
-    tag: latest
+  - name: general-task
+    type: registry-image
+    source:
+      aws_access_key_id: ((ecr_aws_key))
+      aws_secret_access_key: ((ecr_aws_secret))
+      repository: general-task
+      aws_region: us-gov-west-1
+      tag: latest
+
+  - name: terraform-yaml-development
+    type: s3-iam
+    source:
+      bucket: ((tf-state-bucket))
+      region_name: ((aws-region))
+      versioned_file: ((tf-state-file-development))
+
+  - name: terraform-yaml-staging
+    type: s3-iam
+    source:
+      bucket: ((tf-state-bucket))
+      region_name: ((aws-region))
+      versioned_file: ((tf-state-file-staging))
+
+  - name: terraform-yaml-production
+    type: s3-iam
+    source:
+      bucket: ((tf-state-bucket))
+      region_name: ((aws-region))
+      versioned_file: ((tf-state-file-production))
