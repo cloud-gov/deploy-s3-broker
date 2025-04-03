@@ -1,8 +1,0 @@
----
-platform: linux
-
-inputs:
-- name: broker-src-dev
-
-run:
-  path: broker-src-dev/ci/acceptance/run-dev.sh
