@@ -896,16 +896,17 @@ resources:
       bucket: ((tf-state-bucket))
       region_name: ((aws-region))
       versioned_file: ((tf-state-file-development))
-# - name: terraform-yaml-staging
-#   type: s3-iam
-#   source:
-#     bucket: ((tf-state-bucket))
-#     region_name: ((aws-region))
-#     versioned_file: ((tf-state-file-staging))
 
-# - name: terraform-yaml-production
-#   type: s3-iam
-#   source:
-#     bucket: ((tf-state-bucket))
-#     region_name: ((aws-region))
-#     versioned_file: ((tf-state-file-staging))
+  # - name: terraform-yaml-staging
+  #   type: s3-iam
+  #   source:
+  #     bucket: ((tf-state-bucket))
+  #     region_name: ((aws-region))
+  #     versioned_file: ((tf-state-file-staging))
+
+  # - name: terraform-yaml-production
+  #   type: s3-iam
+  #   source:
+  #     bucket: ((tf-state-bucket))
+  #     region_name: ((aws-region))
+  #     versioned_file: ((tf-state-file-production))
