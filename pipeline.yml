@@ -45,7 +45,10 @@ jobs:
           - get: general-task
       - task: test
         image: general-task
-        file: broker-config-dev/tasks/test-dev.yml
+        input_mapping:
+          broker-config: broker-config-dev
+          broker-src: broker-src-dev
+        file: broker-config-dev/tasks/test.yml
 
   - name: push-s3-broker-development
     serial: true
