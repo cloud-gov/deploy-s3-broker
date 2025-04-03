@@ -242,8 +242,6 @@ jobs:
           current_app_name: s3-broker
           environment_variables:
             AWS_REGION: ((staging-aws-region))
-            AWS_ACCESS_KEY: ((staging-aws-access-key-id))
-            AWS_SECRET_ACCESS_KEY: ((staging-aws-secret-access-key))
             AWS_USE_FIPS_ENDPOINT: "true"
       - task: update-broker-sandbox-plans
         file: pipeline-tasks/register-service-broker-and-set-plan-visibility.yml
@@ -472,8 +470,6 @@ jobs:
           current_app_name: s3-broker
           environment_variables:
             AWS_REGION: ((production-aws-region))
-            AWS_ACCESS_KEY: ((production-aws-access-key-id))
-            AWS_SECRET_ACCESS_KEY: ((production-aws-secret-access-key))
             AWS_USE_FIPS_ENDPOINT: "true"
       - task: update-broker-sandbox-plans
         file: pipeline-tasks/register-service-broker-and-set-plan-visibility.yml
