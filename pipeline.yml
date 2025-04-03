@@ -94,13 +94,14 @@ jobs:
       environment_variables:
         AWS_REGION: ((development-aws-region))
         AWS_USE_FIPS_ENDPOINT: "true"
-  - task: update-broker-sandbox-only-plans
-    file: pipeline-tasks/register-service-broker-only-sandboxes.yml
+  - task: update-broker-sandbox-plans
+    file: pipeline-tasks/register-service-broker-and-set-plan-visibility.yml
     params:
       <<: *development-cf-creds
       BROKER_NAME: s3-broker
       AUTH_USER: ((development-auth-name))
       AUTH_PASS: ((development-auth-pass))
+      # allow sandbox and non-sandbox orgs to use these plans
       SERVICES: s3:basic-sandbox s3:basic-public-sandbox
   - task: update-broker-non-sandbox-plans
     file: pipeline-tasks/register-service-broker-exclude-sandboxes.yml
@@ -240,14 +241,15 @@ jobs:
         AWS_ACCESS_KEY: ((staging-aws-access-key-id))
         AWS_SECRET_ACCESS_KEY: ((staging-aws-secret-access-key))
         AWS_USE_FIPS_ENDPOINT: "true"
-  - task: update-broker
+  - task: update-broker-sandbox-plans
     file: pipeline-tasks/register-service-broker-and-set-plan-visibility.yml
     params:
       <<: *staging-cf-creds
       BROKER_NAME: s3-broker
       AUTH_USER: ((staging-auth-name))
       AUTH_PASS: ((staging-auth-pass))
-      SERVICES: s3
+      # allow sandbox and non-sandbox orgs to use these plans
+      SERVICES: s3:basic-sandbox s3:basic-public-sandbox
   - task: update-broker-non-sandbox-plans
     file: pipeline-tasks/register-service-broker-exclude-sandboxes.yml
     params:
@@ -463,14 +465,15 @@ jobs:
         AWS_ACCESS_KEY: ((production-aws-access-key-id))
         AWS_SECRET_ACCESS_KEY: ((production-aws-secret-access-key))
         AWS_USE_FIPS_ENDPOINT: "true"
-  - task: update-broker
+  - task: update-broker-sandbox-plans
     file: pipeline-tasks/register-service-broker-and-set-plan-visibility.yml
     params:
       <<: *production-cf-creds
       BROKER_NAME: s3-broker
       AUTH_USER: ((production-auth-name))
       AUTH_PASS: ((production-auth-pass))
-      SERVICES: s3
+      # allow sandbox and non-sandbox orgs to use these plans
+      SERVICES: s3:basic-sandbox s3:basic-public-sandbox
   - task: update-broker-non-sandbox-plans
     file: pipeline-tasks/register-service-broker-exclude-sandboxes.yml
     params:
