@@ -22,6 +22,14 @@ EOF
 
 cp -r broker-src/. broker-src-built
 
+ACCESS_KEY_ID=$(grep 's3_broker_user_access_key_id_curr' "terraform-yaml/state.yml" | awk '{print $2}')
+SECRET_ACCESS_KEY=$(grep 's3_broker_user_secret_access_key_curr' "terraform-yaml/state.yml" | awk '{print $2}')
+
+cat << EOF > broker-src-built/vars.yml
+access_key_id: $ACCESS_KEY_ID
+secret_access_key: $SECRET_ACCESS_KEY
+EOF
+
 # Override upstream example manifest
 cat << EOF > broker-src-built/manifest.yml
 applications:
@@ -32,6 +40,8 @@ applications:
   command: s3-broker --config ./config.yml --port \$PORT
 env:
   GOPACKAGENAME: github.com/cloud-gov/s3-broker
+  AWS_ACCESS_KEY: ((access-key-id))
+  AWS_SECRET_ACCESS_KEY: ((secret-access-key))  
 EOF
 
 # if a the config-template has the variable $INTERNAL_VPCE_ID

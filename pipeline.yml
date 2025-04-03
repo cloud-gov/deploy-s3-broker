@@ -89,6 +89,8 @@ jobs:
       path: broker-src-built
       manifest: broker-src-built/manifest.yml
       current_app_name: s3-broker
+      vars_files:
+        - broker-src-built/vars.yml
       environment_variables:
         AWS_REGION: ((development-aws-region))
         AWS_USE_FIPS_ENDPOINT: "true"
