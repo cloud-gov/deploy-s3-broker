@@ -159,7 +159,7 @@ jobs:
                   ]
                 }
           - task: acceptance-tests-public
-            file: broker-config-dev/tasks/acceptance-tests-dev.yml
+            file: broker-config-dev/tasks/acceptance-tests.yml
             image: general-task
             params:
               <<: *development-cf-creds
@@ -170,7 +170,7 @@ jobs:
               IS_PUBLIC: "true"
               ENCRYPTION: *encryption
           - task: acceptance-tests-public-delete
-            file: broker-config-dev/tasks/acceptance-tests-dev.yml
+            file: broker-config-dev/tasks/acceptance-tests.yml
             image: general-task
             params:
               <<: *development-cf-creds
