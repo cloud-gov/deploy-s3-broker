@@ -159,7 +159,7 @@ jobs:
                   ]
                 }
           - task: acceptance-tests-public
-            file: broker-config-dev/tasks/acceptance-tests-dev.yml
+            file: broker-config-dev/tasks/acceptance-tests.yml
             image: general-task
             params:
               <<: *development-cf-creds
@@ -170,7 +170,7 @@ jobs:
               IS_PUBLIC: "true"
               ENCRYPTION: *encryption
           - task: acceptance-tests-public-delete
-            file: broker-config-dev/tasks/acceptance-tests-dev.yml
+            file: broker-config-dev/tasks/acceptance-tests.yml
             image: general-task
             params:
               <<: *development-cf-creds
@@ -245,6 +245,8 @@ jobs:
           path: broker-src-built
           manifest: broker-src-built/manifest.yml
           current_app_name: s3-broker
+          vars_files:
+            - vars.yml
           environment_variables:
             AWS_REGION: ((staging-aws-region))
             AWS_USE_FIPS_ENDPOINT: "true"
@@ -473,6 +475,8 @@ jobs:
           path: broker-src-built
           manifest: broker-src-built/manifest.yml
           current_app_name: s3-broker
+          vars_files:
+            - vars.yml
           environment_variables:
             AWS_REGION: ((production-aws-region))
             AWS_USE_FIPS_ENDPOINT: "true"
