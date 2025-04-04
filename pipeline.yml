@@ -87,8 +87,8 @@ jobs:
           ENVIRONMENT: ((development-environment))
       - put: deploy-s3-broker-app-development
         params:
-          path: broker-src-built
-          manifest: broker-src-built/manifest.yml
+          path: broker-config-built
+          manifest: broker-config-built/manifest-with-vars.yml
           current_app_name: s3-broker
           vars_files:
             - vars.yml
@@ -246,8 +246,8 @@ jobs:
           ENVIRONMENT: ((staging-environment))
       - put: deploy-s3-broker-app-staging
         params:
-          path: broker-src-built
-          manifest: broker-src-built/manifest.yml
+          path: broker-config-built
+          manifest: broker-config-built/manifest-with-vars.yml
           current_app_name: s3-broker
           vars_files:
             - vars.yml
@@ -312,8 +312,8 @@ jobs:
           ENVIRONMENT: ((staging-environment))
       - put: deploy-federalist-s3-broker-app-staging
         params:
-          path: broker-src-built
-          manifest: broker-src-built/manifest.yml
+          path: broker-config-built
+          manifest: broker-config-built/manifest.yml
           current_app_name: federalist-s3-broker
           environment_variables:
             AWS_REGION: ((staging-aws-region))
@@ -476,8 +476,8 @@ jobs:
           ENVIRONMENT: ((production-environment))
       - put: deploy-s3-broker-app-production
         params:
-          path: broker-src-built
-          manifest: broker-src-built/manifest.yml
+          path: broker-config-built
+          manifest: broker-config-built/manifest-with-vars.yml
           current_app_name: s3-broker
           vars_files:
             - vars.yml
@@ -541,8 +541,8 @@ jobs:
           ENVIRONMENT: ((production-environment))
       - put: deploy-federalist-s3-broker-app-production
         params:
-          path: broker-src-built
-          manifest: broker-src-built/manifest.yml
+          path: broker-config-built
+          manifest: broker-config-built/manifest.yml
           current_app_name: federalist-s3-broker
           environment_variables:
             AWS_REGION: ((federalist-production-aws-region))
@@ -598,8 +598,8 @@ jobs:
           ENVIRONMENT: ((production-environment))
       - put: deploy-pages-s3-broker-app-production
         params:
-          path: broker-src-built
-          manifest: broker-src-built/manifest.yml
+          path: broker-config-built
+          manifest: broker-config-built/manifest.yml
           current_app_name: pages-s3-broker
           environment_variables:
             AWS_REGION: ((federalist-production-aws-region))
