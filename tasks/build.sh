@@ -20,13 +20,15 @@ cf_config:
   client_secret: "${CF_CLIENT_SECRET}"
 EOF
 
-cp -r broker-config/. broker-config-built
+cp -r broker-src/. broker-src-built
+
+cp "broker-config/manifest*.yml" broker-src-built
 
 if [ -d "terraform-yaml" ]; then
 ACCESS_KEY_ID=$(grep 's3_broker_user_access_key_id_curr' "terraform-yaml/state.yml" | awk '{print $2}')
 SECRET_ACCESS_KEY=$(grep 's3_broker_user_secret_access_key_curr' "terraform-yaml/state.yml" | awk '{print $2}')
 
-cat << EOF > broker-config-built/vars.yml
+cat << EOF > broker-src-built/vars.yml
 access_key_id: $ACCESS_KEY_ID
 secret_access_key: $SECRET_ACCESS_KEY
 EOF
@@ -39,4 +41,4 @@ regex="s/\$INTERNAL_VPCE_ID/${INTERNAL_VPCE_ID:-}/"
 sed $regex broker-config/"${CONFIG_FILE_NAME}".yml > "${CONFIG_FILE_NAME}-rendered".yml
 
 spruce merge "${CONFIG_FILE_NAME}-rendered".yml credentials.yml \
-  > broker-config-built/config.yml
+  > broker-src-built/config.yml

@@ -2,12 +2,13 @@
 platform: linux
 
 inputs:
+  - name: broker-src
   - name: broker-config
   - name: terraform-yaml
     optional: true
 
 outputs:
-  - name: broker-config-built
+  - name: broker-src-built
 
 run:
   path: broker-config/tasks/build.sh
