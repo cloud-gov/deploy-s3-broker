@@ -60,8 +60,6 @@ jobs:
           - get: broker-config-dev
             passed: [test-s3-broker-dev]
             trigger: true
-          - get: terraform-yaml-development
-            trigger: true
           - get: pipeline-tasks
           - get: general-task
       - task: build
@@ -70,7 +68,6 @@ jobs:
         input_mapping:
           broker-src: broker-src-dev
           broker-config: broker-config-dev
-          terraform-yaml: terraform-yaml-development
         params:
           AUTH_USERNAME: ((development-auth-name))
           AUTH_PASSWORD: ((development-auth-pass))
@@ -88,13 +85,13 @@ jobs:
       - put: deploy-s3-broker-app-development
         params:
           path: broker-src-built
-          manifest: broker-src-built/manifest-with-vars.yml
+          manifest: broker-src-built/manifest.yml
           current_app_name: s3-broker
-          vars_files:
-            - vars.yml
           environment_variables:
             AWS_REGION: ((development-aws-region))
             AWS_USE_FIPS_ENDPOINT: "true"
+            AWS_ACCESS_KEY: ((development-aws-access-key-id))
+            AWS_SECRET_ACCESS_KEY: ((development-aws-secret-access-key))
       - task: update-broker-sandbox-plans
         file: pipeline-tasks/register-service-broker-and-set-plan-visibility.yml
         params:
@@ -219,8 +216,6 @@ jobs:
           - get: broker-config
             passed: [test-s3-broker]
             trigger: true
-          - get: terraform-yaml-staging
-            trigger: true
           - get: pipeline-tasks
           - get: general-task
       - task: build
@@ -229,7 +224,6 @@ jobs:
         input_mapping:
           broker-src: broker-src
           broker-config: broker-config
-          terraform-yaml: terraform-yaml-staging
         params:
           AUTH_USERNAME: ((staging-auth-name))
           AUTH_PASSWORD: ((staging-auth-pass))
@@ -247,13 +241,13 @@ jobs:
       - put: deploy-s3-broker-app-staging
         params:
           path: broker-src-built
-          manifest: broker-src-built/manifest-with-vars.yml
+          manifest: broker-src-built/manifest.yml
           current_app_name: s3-broker
-          vars_files:
-            - vars.yml
           environment_variables:
             AWS_REGION: ((staging-aws-region))
             AWS_USE_FIPS_ENDPOINT: "true"
+            AWS_ACCESS_KEY: ((staging-aws-access-key-id))
+            AWS_SECRET_ACCESS_KEY: ((staging-aws-secret-access-key))
       - task: update-broker-sandbox-plans
         file: pipeline-tasks/register-service-broker-and-set-plan-visibility.yml
         params:
@@ -451,15 +445,12 @@ jobs:
             trigger: true
           - get: pipeline-tasks
           - get: general-task
-          - get: terraform-yaml-production
-            trigger: true
       - task: build
         image: general-task
         file: broker-config/tasks/build.yml
         input_mapping:
           broker-src: broker-src
           broker-config: broker-config
-          terraform-yaml: terraform-yaml-production
         params:
           AUTH_USERNAME: ((production-auth-name))
           AUTH_PASSWORD: ((production-auth-pass))
@@ -477,13 +468,13 @@ jobs:
       - put: deploy-s3-broker-app-production
         params:
           path: broker-src-built
-          manifest: broker-src-built/manifest-with-vars.yml
+          manifest: broker-src-built/manifest.yml
           current_app_name: s3-broker
-          vars_files:
-            - vars.yml
           environment_variables:
             AWS_REGION: ((production-aws-region))
             AWS_USE_FIPS_ENDPOINT: "true"
+            AWS_ACCESS_KEY: ((production-aws-access-key-id))
+            AWS_SECRET_ACCESS_KEY: ((production-aws-secret-access-key))
       - task: update-broker-sandbox-plans
         file: pipeline-tasks/register-service-broker-and-set-plan-visibility.yml
         params:
@@ -909,24 +900,3 @@ resources:
       repository: general-task
       aws_region: us-gov-west-1
       tag: latest
-
-  - name: terraform-yaml-development
-    type: s3-iam
-    source:
-      bucket: ((tf-state-bucket))
-      region_name: ((aws-region))
-      versioned_file: ((tf-state-file-development))
-
-  - name: terraform-yaml-staging
-    type: s3-iam
-    source:
-      bucket: ((tf-state-bucket))
-      region_name: ((aws-region))
-      versioned_file: ((tf-state-file-staging))
-
-  - name: terraform-yaml-production
-    type: s3-iam
-    source:
-      bucket: ((tf-state-bucket))
-      region_name: ((aws-region))
-      versioned_file: ((tf-state-file-production))
