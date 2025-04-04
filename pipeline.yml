@@ -87,7 +87,7 @@ jobs:
           ENVIRONMENT: ((development-environment))
       - put: deploy-s3-broker-app-development
         params:
-          path: broker-src
+          path: broker-src-built
           manifest: broker-src-built/manifest-with-vars.yml
           current_app_name: s3-broker
           vars_files:
