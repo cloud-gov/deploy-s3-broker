@@ -22,7 +22,7 @@ EOF
 
 cp -r broker-src/. broker-src-built
 
-cp "broker-config/manifest*.yml" broker-src-built
+cp broker-config/manifest*.yml broker-src-built
 
 if [ -d "terraform-yaml" ]; then
 ACCESS_KEY_ID=$(grep 's3_broker_user_access_key_id_curr' "terraform-yaml/state.yml" | awk '{print $2}')
