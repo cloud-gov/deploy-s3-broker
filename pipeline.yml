@@ -161,6 +161,8 @@ jobs:
           - task: acceptance-tests-public
             file: broker-config-dev/tasks/acceptance-tests.yml
             image: general-task
+            input_mapping:
+              broker-src: broker-src-dev
             params:
               <<: *development-cf-creds
               APP_NAME: s3-acceptance-test-public
@@ -172,6 +174,8 @@ jobs:
           - task: acceptance-tests-public-delete
             file: broker-config-dev/tasks/acceptance-tests.yml
             image: general-task
+            input_mapping:
+              broker-src: broker-src-dev
             params:
               <<: *development-cf-creds
               APP_NAME: s3-acceptance-test-public-delete
