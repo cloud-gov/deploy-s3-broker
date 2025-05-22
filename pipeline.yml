@@ -895,6 +895,15 @@ resources:
       organization: ((development-cf-organization))
       space: ((development-cf-space))
 
+  - name: deploy-s3-broker-staging-tasks
+    type: cf
+    source:
+      api: ((staging-cf-api-url))
+      username: ((staging-cf-username))
+      password: ((staging-cf-password))
+      organization: ((staging-cf-organization))
+      space: ((staging-cf-space))
+
   - name: deploy-s3-broker-app-staging
     type: cf
     source:
@@ -912,6 +921,15 @@ resources:
       password: ((staging-cf-password))
       organization: ((staging-cf-organization))
       space: ((staging-cf-space))
+
+  - name: deploy-s3-broker-production-tasks
+    type: cf
+    source:
+      api: ((prod-cf-api-url))
+      username: ((production-cf-username))
+      password: ((production-cf-password))
+      organization: ((production-cf-organization))
+      space: ((production-cf-space))
 
   - name: deploy-s3-broker-app-production
     type: cf
