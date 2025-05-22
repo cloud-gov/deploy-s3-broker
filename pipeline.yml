@@ -279,6 +279,21 @@ jobs:
           AUTH_USER: ((staging-auth-name))
           AUTH_PASS: ((staging-auth-pass))
           SERVICES: s3:basic s3:basic-public
+      - put: deploy-s3-broker-staging-tasks
+        params:
+          manifest: broker-src-built/manifest.yml
+          path: broker-src-built/cmd/tasks
+          current_app_name: s3-broker-tasks
+          task: true
+          environment_variables:
+            GO_INSTALL_PACKAGE_SPEC: github.com/cloud-gov/s3-broker/cmd/tasks
+            AUTH_USER: ((staging-auth-name))
+            AUTH_PASS: ((staging-auth-pass))
+            AWS_DEFAULT_REGION: ((staging-aws-region))
+            ENVIRONMENT: ((staging-environment))
+            CF_API_URL: ((staging-cf-api-url))
+            CF_API_CLIENT_ID: ((staging-cf-client-id))
+            CF_API_CLIENT_SECRET: ((staging-cf-client-secret))
 
     on_failure:
       put: slack
@@ -506,6 +521,21 @@ jobs:
           AUTH_USER: ((production-auth-name))
           AUTH_PASS: ((production-auth-pass))
           SERVICES: s3:basic s3:basic-public
+      - put: deploy-s3-broker-production-tasks
+        params:
+          manifest: broker-src-built/manifest.yml
+          path: broker-src-built/cmd/tasks
+          current_app_name: s3-broker-tasks
+          task: true
+          environment_variables:
+            GO_INSTALL_PACKAGE_SPEC: github.com/cloud-gov/s3-broker/cmd/tasks
+            AUTH_USER: ((production-auth-name))
+            AUTH_PASS: ((production-auth-pass))
+            AWS_DEFAULT_REGION: ((production-aws-region))
+            ENVIRONMENT: ((production-environment))
+            CF_API_URL: ((production-cf-api-url))
+            CF_API_CLIENT_ID: ((production-cf-client-id))
+            CF_API_CLIENT_SECRET: ((production-cf-client-secret))
     on_failure:
       put: slack
       params:
