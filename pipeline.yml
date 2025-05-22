@@ -109,7 +109,21 @@ jobs:
           AUTH_USER: ((development-auth-name))
           AUTH_PASS: ((development-auth-pass))
           SERVICES: s3:basic s3:basic-public
-
+      - put: deploy-s3-broker-dev-tasks
+        params:
+          manifest: broker-src-built/manifest.yml
+          path: broker-src-dev/cmd/tasks
+          current_app_name: s3-broker-tasks
+          task: true
+          environment_variables:
+            GO_INSTALL_PACKAGE_SPEC: github.com/cloud-gov/s3-broker/cmd/tasks
+            AUTH_USER: ((development-auth-name))
+            AUTH_PASS: ((development-auth-pass))
+            AWS_DEFAULT_REGION: ((development-aws-region))
+            ENVIRONMENT: ((development-environment))
+            CF_API_URL: ((dev-cf-api-url))
+            CF_API_CLIENT_ID: ((development-cf-client-id))
+            CF_API_CLIENT_SECRET: ((development-cf-client-secret))
     on_failure:
       put: slack
       params: &slack-channel-failure
@@ -832,6 +846,15 @@ resources:
       uri: https://github.com/cloud-gov/cg-pipeline-tasks
       branch: main
       commit_verification_keys: ((cloud-gov-pgp-keys))
+
+  - name: deploy-s3-broker-dev-tasks
+    type: cf
+    source:
+      api: ((dev-cf-api-url))
+      username: ((development-cf-username))
+      password: ((development-cf-password))
+      organization: ((development-cf-organization))
+      space: ((development-cf-space))
 
   - name: deploy-s3-broker-app-development
     type: cf
