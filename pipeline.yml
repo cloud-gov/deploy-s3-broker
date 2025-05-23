@@ -866,7 +866,7 @@ resources:
     type: git
     source:
       uri: https://github.com/cloud-gov/cg-deploy-s3-broker
-      branch: tags
+      branch: tag
       commit_verification_keys: ((cloud-gov-pgp-keys))
 
   - name: broker-config-dev
