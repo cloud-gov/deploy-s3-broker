@@ -124,7 +124,7 @@ jobs:
             CF_API_URL: ((dev-cf-api-url))
             CF_API_CLIENT_ID: ((development-cf-client-id))
             CF_API_CLIENT_SECRET: ((development-cf-client-secret))
-            AWS_ACCESS_KEY: ((development-aws-task-key-id))
+            AWS_ACCESS_KEY_ID: ((development-aws-task-key-id))
             AWS_SECRET_ACCESS_KEY: ((development-aws-task-secret-access-key))
     on_failure:
       put: slack
@@ -296,7 +296,7 @@ jobs:
             CF_API_URL: ((staging-cf-api-url))
             CF_API_CLIENT_ID: ((staging-cf-client-id))
             CF_API_CLIENT_SECRET: ((staging-cf-client-secret))
-            AWS_ACCESS_KEY: ((staging-aws-task-key-id))
+            AWS_ACCESS_KEY_ID: ((staging-aws-task-key-id))
             AWS_SECRET_ACCESS_KEY: ((staging-aws-task-secret-access-key))
 
     on_failure:
@@ -540,7 +540,7 @@ jobs:
             CF_API_URL: ((production-cf-api-url))
             CF_API_CLIENT_ID: ((production-cf-client-id))
             CF_API_CLIENT_SECRET: ((production-cf-client-secret))
-            AWS_ACCESS_KEY: ((production-aws-task-key-id))
+            AWS_ACCESS_KEY_ID: ((production-aws-task-key-id))
             AWS_SECRET_ACCESS_KEY: ((production-aws-task-secret-access-key))
     on_failure:
       put: slack
