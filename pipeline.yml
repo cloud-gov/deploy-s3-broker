@@ -198,6 +198,20 @@ jobs:
               IS_PUBLIC: "true"
               IS_DELETE: "true"
               ENCRYPTION: *encryption
+          - task: acceptance-tests-additional-instance
+            file: broker-config-dev/tasks/acceptance-tests.yml
+            image: general-task
+            input_mapping:
+              broker-src: broker-src-dev
+            params:
+              <<: *development-cf-creds
+              APP_NAME: s3-acceptance-test-additional-instance
+              SERVICE_NAME: s3
+              PLAN_NAME: basic
+              SERVICE_INSTANCE_NAME: s3-acceptance-test-public-delete
+              ADDITIONAL_INSTANCE_NAME: s3-acceptance-test-additional-instance
+              IS_PUBLIC: "false"
+              ENCRYPTION: *encryption
 
   - name: set-self
     plan:
