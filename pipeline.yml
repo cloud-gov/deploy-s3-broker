@@ -208,8 +208,8 @@ jobs:
               APP_NAME: s3-acceptance-test-additional-instance
               SERVICE_NAME: s3
               PLAN_NAME: basic
-              SERVICE_INSTANCE_NAME: s3-acceptance-test-public-delete
-              ADDITIONAL_INSTANCE_NAME: s3-acceptance-test-additional-instance
+              SERVICE_INSTANCE_NAME: s3-acceptance-test-additional-instance-1
+              ADDITIONAL_INSTANCE_NAME: s3-acceptance-test-additional-instance-2
               IS_PUBLIC: "false"
               ENCRYPTION: *encryption
 
