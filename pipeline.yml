@@ -873,7 +873,7 @@ resources:
     type: git
     source:
       uri: https://github.com/cloud-gov/s3-broker
-      branch: main
+      branch: fix-test-script
       commit_verification_keys: ((cloud-gov-pgp-keys))
 
   - name: broker-config
@@ -887,7 +887,7 @@ resources:
     type: git
     source:
       uri: https://github.com/cloud-gov/cg-deploy-s3-broker
-      branch: main
+      branch: add-acceptance-test
       commit_verification_keys: ((cloud-gov-pgp-keys))
 
   - name: pipeline-tasks
