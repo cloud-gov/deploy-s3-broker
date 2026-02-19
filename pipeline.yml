@@ -198,6 +198,20 @@ jobs:
               IS_PUBLIC: "true"
               IS_DELETE: "true"
               ENCRYPTION: *encryption
+          - task: acceptance-tests-additional-instance
+            file: broker-config-dev/tasks/acceptance-tests.yml
+            image: general-task
+            input_mapping:
+              broker-src: broker-src-dev
+            params:
+              <<: *development-cf-creds
+              APP_NAME: s3-acceptance-test-additional-instance
+              SERVICE_NAME: s3
+              PLAN_NAME: basic
+              SERVICE_INSTANCE_NAME: s3-acceptance-test-additional-instance-1
+              ADDITIONAL_INSTANCE_NAME: s3-acceptance-test-additional-instance-2
+              IS_PUBLIC: "false"
+              ENCRYPTION: *encryption
 
   - name: set-self
     plan:
@@ -420,6 +434,19 @@ jobs:
               IS_PUBLIC: "true"
               IS_DELETE: "true"
               ENCRYPTION: *encryption
+          - task: acceptance-tests-additional-instance
+            file: broker-config/tasks/acceptance-tests.yml
+            image: general-task
+            params:
+              <<: *staging-cf-creds
+              APP_NAME: s3-acceptance-test-additional-instance
+              SERVICE_NAME: s3
+              PLAN_NAME: basic
+              SERVICE_INSTANCE_NAME: s3-acceptance-test-additional-instance-1
+              ADDITIONAL_INSTANCE_NAME: s3-acceptance-test-additional-instance-2
+              IS_PUBLIC: "false"
+              ENCRYPTION: *encryption
+
 
   - name: federalist-acceptance-tests-staging
     serial: true
@@ -709,6 +736,18 @@ jobs:
               SERVICE_INSTANCE_NAME: s3-acceptance-test-public-delete
               IS_PUBLIC: "true"
               IS_DELETE: "true"
+              ENCRYPTION: *encryption
+          - task: acceptance-tests-additional-instance
+            file: broker-config/tasks/acceptance-tests.yml
+            image: general-task
+            params:
+              <<: *production-cf-creds
+              APP_NAME: s3-acceptance-test-additional-instance
+              SERVICE_NAME: s3
+              PLAN_NAME: basic
+              SERVICE_INSTANCE_NAME: s3-acceptance-test-additional-instance-1
+              ADDITIONAL_INSTANCE_NAME: s3-acceptance-test-additional-instance-2
+              IS_PUBLIC: "false"
               ENCRYPTION: *encryption
 
   - name: federalist-acceptance-tests-production
