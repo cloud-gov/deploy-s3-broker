@@ -22,11 +22,18 @@ RO_KEY_NAME="${SERVICE_INSTANCE_NAME}-read-only-key"
 TEST_OBJECT_KEY="smoke-test-read-only-object"
 TEST_OBJECT_BODY="smoke-test-read-only-body"
 
+WORKDIR=$(mktemp -d)
+TEST_OBJECT_FILE="${WORKDIR}/test-object-body"
+WRITE_ATTEMPT_FILE="${WORKDIR}/write-attempt-body"
+printf '%s' "$TEST_OBJECT_BODY" > "$TEST_OBJECT_FILE"
+printf '%s' "should not be writable" > "$WRITE_ATTEMPT_FILE"
+
 cleanup() {
   set +e
   cf delete-service-key -f "$SERVICE_INSTANCE_NAME" "$RO_KEY_NAME"
   cf delete-service-key -f "$SERVICE_INSTANCE_NAME" "$RW_KEY_NAME"
   cf delete-service -f "$SERVICE_INSTANCE_NAME"
+  rm -rf "$WORKDIR"
 }
 trap cleanup EXIT
 
@@ -50,7 +57,7 @@ AWS_ACCESS_KEY_ID="$rw_access_key_id" AWS_SECRET_ACCESS_KEY="$rw_secret_access_k
   aws s3api put-object \
     --bucket "$rw_bucket" \
     --key "$TEST_OBJECT_KEY" \
-    --body <(printf '%s' "$TEST_OBJECT_BODY") \
+    --body "$TEST_OBJECT_FILE" \
     --region "$region"
 
 # Read-only key: the one under test.
@@ -87,7 +94,7 @@ if AWS_ACCESS_KEY_ID="$ro_access_key_id" AWS_SECRET_ACCESS_KEY="$ro_secret_acces
     aws s3api put-object \
       --bucket "$ro_bucket" \
       --key "${TEST_OBJECT_KEY}-write-attempt" \
-      --body <(printf '%s' "should not be writable") \
+      --body "$WRITE_ATTEMPT_FILE" \
       --region "$region" 2>/tmp/put-object-error.log; then
   echo "FAIL: read-only key was able to write an object; it should have been denied"
   exit 1
