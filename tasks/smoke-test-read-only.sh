@@ -65,7 +65,7 @@ wait_for_credentials() {
   local max_attempts=15
   local attempt=1
 
-  local transient_error_pattern="InvalidAccessKeyId|SignatureDoesNotMatch"
+  local transient_error_pattern="InvalidAccessKeyId|SignatureDoesNotMatch|AccessDenied"
 
   while [ "$attempt" -le "$max_attempts" ]; do
     if AWS_ACCESS_KEY_ID="$access_key" AWS_SECRET_ACCESS_KEY="$secret_key" \
@@ -82,6 +82,36 @@ wait_for_credentials() {
 
   echo "FAIL: access key $access_key did not become usable after $max_attempts attempts"
   cat /tmp/wait-for-credentials-error.log
+  return 1
+}
+
+wait_for_service_key() {
+  local key_name="$1"
+  local max_attempts=15
+  local attempt=1
+  local creds=""
+
+  while [ "$attempt" -le "$max_attempts" ]; do
+    creds=$(cf service-key "$SERVICE_INSTANCE_NAME" "$key_name" 2>/tmp/service-key-error.log | sed -n '/^{/,$p')
+    if [ -n "$creds" ] && echo "$creds" | jq -e '
+          .credentials.access_key_id? and .credentials.access_key_id != "" and
+          .credentials.secret_access_key? and .credentials.secret_access_key != "" and
+          .credentials.bucket? and .credentials.bucket != "" and
+          .credentials.region? and .credentials.region != ""
+        ' >/dev/null 2>&1; then
+      echo "$creds"
+      return 0
+    fi
+    sleep 2
+    attempt=$((attempt + 1))
+  done
+
+  echo "FAIL: service key $key_name did not return usable credentials after $max_attempts attempts" >&2
+  cat /tmp/service-key-error.log >&2
+  if [ -n "$creds" ]; then
+    echo "Last response:" >&2
+    echo "$creds" >&2
+  fi
   return 1
 }
 
@@ -116,7 +146,7 @@ cf create-service "$SERVICE_NAME" "$PLAN_NAME" "$SERVICE_INSTANCE_NAME"
 
 # Read/write key: used to seed the object the read-only key will read.
 cf create-service-key "$SERVICE_INSTANCE_NAME" "$RW_KEY_NAME"
-rw_creds=$(cf service-key "$SERVICE_INSTANCE_NAME" "$RW_KEY_NAME" | sed -n '/^{/,$p')
+rw_creds=$(wait_for_service_key "$RW_KEY_NAME")
 
 rw_bucket=$(echo "$rw_creds" | jq -r '.credentials.bucket')
 rw_access_key_id=$(echo "$rw_creds" | jq -r '.credentials.access_key_id')
@@ -144,7 +174,7 @@ AWS_ACCESS_KEY_ID="$rw_access_key_id" AWS_SECRET_ACCESS_KEY="$rw_secret_access_k
 
 # Read-only key: the one under test.
 cf create-service-key "$SERVICE_INSTANCE_NAME" "$RO_KEY_NAME" -c '{"read_only": true}'
-ro_creds=$(cf service-key "$SERVICE_INSTANCE_NAME" "$RO_KEY_NAME" | sed -n '/^{/,$p')
+ro_creds=$(wait_for_service_key "$RO_KEY_NAME")
 
 ro_bucket=$(echo "$ro_creds" | jq -r '.credentials.bucket')
 ro_access_key_id=$(echo "$ro_creds" | jq -r '.credentials.access_key_id')
