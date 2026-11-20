@@ -65,12 +65,14 @@ wait_for_credentials() {
   local max_attempts=15
   local attempt=1
 
+  local transient_error_pattern="InvalidAccessKeyId|InvalidClientTokenId|SignatureDoesNotMatch"
+
   while [ "$attempt" -le "$max_attempts" ]; do
     if AWS_ACCESS_KEY_ID="$access_key" AWS_SECRET_ACCESS_KEY="$secret_key" \
         aws sts get-caller-identity --region "$bucket_region" >/dev/null 2>/tmp/wait-for-credentials-error.log; then
       return 0
     fi
-    if ! grep -qi "InvalidAccessKeyId" /tmp/wait-for-credentials-error.log; then
+    if ! grep -qiE "$transient_error_pattern" /tmp/wait-for-credentials-error.log; then
       cat /tmp/wait-for-credentials-error.log
       return 1
     fi
