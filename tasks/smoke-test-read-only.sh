@@ -28,8 +28,22 @@ WRITE_ATTEMPT_FILE="${WORKDIR}/write-attempt-body"
 printf '%s' "$TEST_OBJECT_BODY" > "$TEST_OBJECT_FILE"
 printf '%s' "should not be writable" > "$WRITE_ATTEMPT_FILE"
 
+# Populated once the read/write service key is created; used by cleanup to
+# empty the bucket so `cf delete-service` (which does not empty non-empty
+# buckets unless the plan is configured as deletable) does not fail.
+rw_bucket=""
+rw_access_key_id=""
+rw_secret_access_key=""
+region=""
+
 cleanup() {
   set +e
+  # S3 buckets must be empty before they can be deleted; empty it with the
+  # read/write key (if we got that far) before deleting the service.
+  if [ -n "$rw_bucket" ] && [ -n "$rw_access_key_id" ] && [ -n "$rw_secret_access_key" ]; then
+    AWS_ACCESS_KEY_ID="$rw_access_key_id" AWS_SECRET_ACCESS_KEY="$rw_secret_access_key" \
+      aws s3 rm "s3://${rw_bucket}" --recursive --region "$region"
+  fi
   cf delete-service-key -f "$SERVICE_INSTANCE_NAME" "$RO_KEY_NAME"
   cf delete-service-key -f "$SERVICE_INSTANCE_NAME" "$RW_KEY_NAME"
   cf delete-service -f "$SERVICE_INSTANCE_NAME"
@@ -141,12 +155,5 @@ if ! grep -qi "AccessDenied" /tmp/delete-object-error.log; then
   exit 1
 fi
 echo "PASS: read-only key is denied delete access"
-
-# Clean up the test object using the read/write key (cleanup trap handles CF resources).
-AWS_ACCESS_KEY_ID="$rw_access_key_id" AWS_SECRET_ACCESS_KEY="$rw_secret_access_key" \
-  aws s3api delete-object \
-    --bucket "$rw_bucket" \
-    --key "$TEST_OBJECT_KEY" \
-    --region "$region"
 
 echo "PASS: read-only smoke test completed successfully"
