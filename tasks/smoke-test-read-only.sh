@@ -48,10 +48,20 @@ cf create-service "$SERVICE_NAME" "$PLAN_NAME" "$SERVICE_INSTANCE_NAME"
 cf create-service-key "$SERVICE_INSTANCE_NAME" "$RW_KEY_NAME"
 rw_creds=$(cf service-key "$SERVICE_INSTANCE_NAME" "$RW_KEY_NAME" | sed -n '/^{/,$p')
 
-rw_bucket=$(echo "$rw_creds" | jq -r '.bucket')
-rw_access_key_id=$(echo "$rw_creds" | jq -r '.access_key_id')
-rw_secret_access_key=$(echo "$rw_creds" | jq -r '.secret_access_key')
-region=$(echo "$rw_creds" | jq -r '.region')
+rw_bucket=$(echo "$rw_creds" | jq -r '.credentials.bucket')
+rw_access_key_id=$(echo "$rw_creds" | jq -r '.credentials.access_key_id')
+rw_secret_access_key=$(echo "$rw_creds" | jq -r '.credentials.secret_access_key')
+region=$(echo "$rw_creds" | jq -r '.credentials.region')
+
+for name_value in "bucket:$rw_bucket" "access_key_id:$rw_access_key_id" "secret_access_key:$rw_secret_access_key" "region:$region"; do
+  field="${name_value%%:*}"
+  value="${name_value#*:}"
+  if [ -z "$value" ] || [ "$value" = "null" ]; then
+    echo "FAIL: could not parse credentials.$field from read/write service key. Full output:"
+    echo "$rw_creds"
+    exit 1
+  fi
+done
 
 AWS_ACCESS_KEY_ID="$rw_access_key_id" AWS_SECRET_ACCESS_KEY="$rw_secret_access_key" \
   aws s3api put-object \
@@ -64,10 +74,20 @@ AWS_ACCESS_KEY_ID="$rw_access_key_id" AWS_SECRET_ACCESS_KEY="$rw_secret_access_k
 cf create-service-key "$SERVICE_INSTANCE_NAME" "$RO_KEY_NAME" -c '{"read_only": true}'
 ro_creds=$(cf service-key "$SERVICE_INSTANCE_NAME" "$RO_KEY_NAME" | sed -n '/^{/,$p')
 
-ro_bucket=$(echo "$ro_creds" | jq -r '.bucket')
-ro_access_key_id=$(echo "$ro_creds" | jq -r '.access_key_id')
-ro_secret_access_key=$(echo "$ro_creds" | jq -r '.secret_access_key')
-ro_read_only=$(echo "$ro_creds" | jq -r '.read_only')
+ro_bucket=$(echo "$ro_creds" | jq -r '.credentials.bucket')
+ro_access_key_id=$(echo "$ro_creds" | jq -r '.credentials.access_key_id')
+ro_secret_access_key=$(echo "$ro_creds" | jq -r '.credentials.secret_access_key')
+ro_read_only=$(echo "$ro_creds" | jq -r '.credentials.read_only')
+
+for name_value in "bucket:$ro_bucket" "access_key_id:$ro_access_key_id" "secret_access_key:$ro_secret_access_key"; do
+  field="${name_value%%:*}"
+  value="${name_value#*:}"
+  if [ -z "$value" ] || [ "$value" = "null" ]; then
+    echo "FAIL: could not parse credentials.$field from read-only service key. Full output:"
+    echo "$ro_creds"
+    exit 1
+  fi
+done
 
 if [ "$ro_read_only" != "true" ]; then
   echo "FAIL: expected credentials.read_only to be true, got: $ro_read_only"
