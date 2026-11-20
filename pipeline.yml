@@ -212,6 +212,16 @@ jobs:
               ADDITIONAL_INSTANCE_NAME: s3-acceptance-test-additional-instance-2
               IS_PUBLIC: "false"
               ENCRYPTION: *encryption
+          - task: smoke-test-read-only
+            file: broker-config-dev/tasks/smoke-test-read-only.yml
+            image: general-task
+            input_mapping:
+              broker-config: broker-config-dev
+            params:
+              <<: *development-cf-creds
+              SERVICE_NAME: s3
+              PLAN_NAME: basic
+              SERVICE_INSTANCE_NAME: s3-smoke-test-read-only
 
   - name: set-self
     plan:

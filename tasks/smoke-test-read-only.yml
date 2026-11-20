@@ -1,0 +1,18 @@
+---
+platform: linux
+
+inputs:
+- name: broker-config
+
+params:
+  CF_API_URL:
+  CF_USERNAME:
+  CF_PASSWORD:
+  CF_ORGANIZATION:
+  CF_SPACE:
+  SERVICE_NAME:
+  PLAN_NAME:
+  SERVICE_INSTANCE_NAME:
+
+run:
+  path: broker-config/tasks/smoke-test-read-only.sh
