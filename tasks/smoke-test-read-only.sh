@@ -199,14 +199,15 @@ fi
 wait_for_credentials "$ro_access_key_id" "$ro_secret_access_key" "$ro_bucket" "$region"
 
 # Read-only key must be able to read the object.
-actual_body=$(
-  AWS_ACCESS_KEY_ID="$ro_access_key_id" AWS_SECRET_ACCESS_KEY="$ro_secret_access_key" \
-    aws s3api get-object \
-      --bucket "$ro_bucket" \
-      --key "$TEST_OBJECT_KEY" \
-      --region "$region" \
-      /dev/stdout
-)
+
+GET_OBJECT_FILE="${WORKDIR}/get-object-body"
+AWS_ACCESS_KEY_ID="$ro_access_key_id" AWS_SECRET_ACCESS_KEY="$ro_secret_access_key" \
+  aws s3api get-object \
+    --bucket "$ro_bucket" \
+    --key "$TEST_OBJECT_KEY" \
+    --region "$region" \
+    "$GET_OBJECT_FILE" >/dev/null
+actual_body=$(cat "$GET_OBJECT_FILE")
 if [ "$actual_body" != "$TEST_OBJECT_BODY" ]; then
   echo "FAIL: read-only key could not read expected object contents. got: $actual_body"
   exit 1
