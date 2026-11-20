@@ -61,15 +61,15 @@ empty_bucket() {
 }
 
 wait_for_credentials() {
-  local access_key="$1" secret_key="$2" bucket_region="$3"
+  local access_key="$1" secret_key="$2" bucket="$3" bucket_region="$4"
   local max_attempts=15
   local attempt=1
 
-  local transient_error_pattern="InvalidAccessKeyId|InvalidClientTokenId|SignatureDoesNotMatch"
+  local transient_error_pattern="InvalidAccessKeyId|SignatureDoesNotMatch"
 
   while [ "$attempt" -le "$max_attempts" ]; do
     if AWS_ACCESS_KEY_ID="$access_key" AWS_SECRET_ACCESS_KEY="$secret_key" \
-        aws sts get-caller-identity --region "$bucket_region" >/dev/null 2>/tmp/wait-for-credentials-error.log; then
+        aws s3api list-objects-v2 --bucket "$bucket" --max-items 1 --region "$bucket_region" >/dev/null 2>/tmp/wait-for-credentials-error.log; then
       return 0
     fi
     if ! grep -qiE "$transient_error_pattern" /tmp/wait-for-credentials-error.log; then
@@ -133,7 +133,7 @@ for name_value in "bucket:$rw_bucket" "access_key_id:$rw_access_key_id" "secret_
   fi
 done
 
-wait_for_credentials "$rw_access_key_id" "$rw_secret_access_key" "$region"
+wait_for_credentials "$rw_access_key_id" "$rw_secret_access_key" "$rw_bucket" "$region"
 
 AWS_ACCESS_KEY_ID="$rw_access_key_id" AWS_SECRET_ACCESS_KEY="$rw_secret_access_key" \
   aws s3api put-object \
@@ -166,7 +166,7 @@ if [ "$ro_read_only" != "true" ]; then
   exit 1
 fi
 
-wait_for_credentials "$ro_access_key_id" "$ro_secret_access_key" "$region"
+wait_for_credentials "$ro_access_key_id" "$ro_secret_access_key" "$ro_bucket" "$region"
 
 # Read-only key must be able to read the object.
 actual_body=$(
