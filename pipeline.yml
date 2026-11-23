@@ -456,6 +456,14 @@ jobs:
               ADDITIONAL_INSTANCE_NAME: s3-acceptance-test-additional-instance-2
               IS_PUBLIC: "false"
               ENCRYPTION: *encryption
+          - task: smoke-test-read-only
+            file: broker-config/tasks/smoke-test-read-only.yml
+            image: general-task
+            params:
+              <<: *staging-cf-creds
+              SERVICE_NAME: s3
+              PLAN_NAME: basic
+              SERVICE_INSTANCE_NAME: s3-smoke-test-read-only
 
 
   - name: federalist-acceptance-tests-staging
@@ -574,7 +582,7 @@ jobs:
             AUTH_PASS: ((production-auth-pass))
             AWS_DEFAULT_REGION: ((production-aws-region))
             ENVIRONMENT: ((production-environment))
-            CF_API_URL: ((production-cf-api-url))
+            CF_API_URL: ((prod-cf-api-url))
             CF_API_CLIENT_ID: ((production-cf-client-id))
             CF_API_CLIENT_SECRET: ((production-cf-client-secret))
             AWS_ACCESS_KEY_ID: ((production-aws-task-key-id))
@@ -759,6 +767,14 @@ jobs:
               ADDITIONAL_INSTANCE_NAME: s3-acceptance-test-additional-instance-2
               IS_PUBLIC: "false"
               ENCRYPTION: *encryption
+          - task: smoke-test-read-only
+            file: broker-config/tasks/smoke-test-read-only.yml
+            image: general-task
+            params:
+              <<: *production-cf-creds
+              SERVICE_NAME: s3
+              PLAN_NAME: basic
+              SERVICE_INSTANCE_NAME: s3-smoke-test-read-only
 
   - name: federalist-acceptance-tests-production
     serial: true
