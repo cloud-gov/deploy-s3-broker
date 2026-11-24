@@ -164,6 +164,7 @@ s3_config:
             unit: Per GB
         s3_properties:
           iam_policy: *iam-policy
+          read_only_iam_policy: *read-only-iam-policy
           bucket_policy: |-
             {
               "Version": "2012-10-17",
@@ -193,6 +194,7 @@ s3_config:
             unit: Per GB
         s3_properties:
           iam_policy: *iam-policy
+          read_only_iam_policy: *read-only-iam-policy
           bucket_policy: |-
             {
               "Version": "2012-10-17",
@@ -222,6 +224,7 @@ s3_config:
             unit: Per GB
         s3_properties:
           iam_policy: *iam-policy
+          read_only_iam_policy: *read-only-iam-policy
           encryption: *encryption
 
 
